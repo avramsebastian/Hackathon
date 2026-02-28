@@ -42,7 +42,7 @@ from ui.constants import (
 from ui.types import Camera, ButtonRect
 from ui.draw_road import draw_map
 from ui.draw_vehicles import draw_all_vehicles
-from ui.hud import draw_top_bar, draw_vehicle_panel, draw_legend, draw_control_bar
+from ui.hud import draw_top_bar, draw_vehicle_panel, draw_control_bar
 
 log = logging.getLogger("pygame_view")
 
@@ -72,7 +72,6 @@ def run_pygame_view(
     scene: str = "launch"  # "launch" | "sim"
     camera = Camera(width, height, zoom=DEFAULT_ZOOM)
     paused = False
-    show_legend = True
     sim_time = 0.0
     frame = 0
 
@@ -107,8 +106,6 @@ def run_pygame_view(
                     if event.key == pygame.K_SPACE:
                         paused = not paused
                         bridge.set_paused(paused)
-                    elif event.key == pygame.K_l:
-                        show_legend = not show_legend
                     elif event.key == pygame.K_r:
                         bridge.reset()
                         sim_time = 0.0
@@ -166,9 +163,12 @@ def run_pygame_view(
             interp = interpolate_vehicles(prev_vehicles, curr_vehicles, t)
 
             # Decisions
-            decisions: Dict[str, Dict[str, Any]] = {}
-            for v in curr_vehicles:
-                decisions[v["id"]] = bridge.get_ml_decision(v["id"])
+            if hasattr(bridge, "get_all_ml_decisions"):
+                decisions = bridge.get_all_ml_decisions()
+            else:
+                decisions: Dict[str, Dict[str, Any]] = {}
+                for v in curr_vehicles:
+                    decisions[v["id"]] = bridge.get_ml_decision(v["id"])
 
             intersection = bridge.get_intersection()
 
@@ -177,8 +177,6 @@ def run_pygame_view(
             draw_all_vehicles(screen, camera, interp, decisions, frame)
             draw_top_bar(screen, interp, sim_time, paused)
             draw_vehicle_panel(screen, interp, decisions, frame)
-            if show_legend:
-                draw_legend(screen)
             ctrl_btns = draw_control_bar(screen, paused, mouse_pos)
 
             # Control-bar click handling

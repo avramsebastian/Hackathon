@@ -116,6 +116,8 @@ class SimBridge:
         drop_rate: float = 0.0,
         latency_ms: int = 0,
         model_path: Optional[str] = None,
+        vehicle_count: int = 6,
+        random_seed: Optional[int] = None,
     ) -> None:
         self._tick_rate_hz = tick_rate_hz
         self._model_path = model_path or os.path.join(
@@ -124,7 +126,7 @@ class SimBridge:
         self._drop_rate = drop_rate
         self._latency_ms = latency_ms
 
-        self._world = World()
+        self._world = World(num_cars=vehicle_count, seed=random_seed)
         self._bus = V2XBus(drop_rate=drop_rate, latency_ms=latency_ms)
 
         self._lock = threading.Lock()
@@ -133,6 +135,7 @@ class SimBridge:
         self._vehicles: List[Dict[str, Any]] = []
         self._decisions: Dict[str, Any] = {}
         self._intersection: Dict[str, Any] = {}
+        self._color_by_id: Dict[str, Tuple[int, int, int]] = {}
 
         self._thread: Optional[threading.Thread] = None
         self._running = False
@@ -168,6 +171,10 @@ class SimBridge:
         with self._lock:
             return dict(self._decisions.get(vehicle_id.upper(), {"decision": "none"}))
 
+    def get_all_ml_decisions(self) -> Dict[str, Dict[str, Any]]:
+        with self._lock:
+            return {vid: dict(dec) for vid, dec in self._decisions.items()}
+
     def get_intersection(self) -> Dict[str, Any]:
         with self._lock:
             return dict(self._intersection)
@@ -182,6 +189,7 @@ class SimBridge:
         with self._lock:
             self._vehicles = []
             self._decisions = {}
+            self._color_by_id = {}
         log.info("SimBridge reset")
 
     def set_paused(self, paused: bool) -> None:
@@ -205,10 +213,10 @@ class SimBridge:
 
     @staticmethod
     def _make_vehicle_dict(
-        car: Car, vid: str, color: Tuple[int, int, int]
+        car: Car, color: Tuple[int, int, int]
     ) -> Dict[str, Any]:
         return {
-            "id": vid,
+            "id": car.id,
             "x": car.x,
             "y": car.y,
             "speed": car.speed,
@@ -221,19 +229,12 @@ class SimBridge:
 
     # ── tick ──────────────────────────────────────────────────────────────────
 
-    def _infer_for_car(self, my_car: Car, others: Sequence[Car]) -> Dict[str, Any]:
+    def _infer_for_car(self, ego_car: Car, others: Sequence[Car]) -> Dict[str, Any]:
         """
-        Run ML inference from one car's perspective.
-
-        ``my_car`` is treated as the ego vehicle and ``others`` as traffic.
-        Returns a normalized decision payload consumed by the UI.
+        Run ML inference for one standalone vehicle entity.
         """
         raw = fa_inferenta_din_json(
-            {
-                "my_car": my_car.as_dict(),
-                "sign": self._world.current_sign,
-                "traffic": [c.as_dict() for c in others],
-            },
+            ego_car.ml_payload(self._world.current_sign, others),
             model_path=self._model_path,
         )
         if raw.get("status") == "success":
@@ -244,51 +245,91 @@ class SimBridge:
             }
         return {"decision": "none"}
 
+    def _color_for_car(self, car_id: str) -> Tuple[int, int, int]:
+        existing = self._color_by_id.get(car_id)
+        if existing:
+            return existing
+        color = _VEHICLE_COLORS[len(self._color_by_id) % len(_VEHICLE_COLORS)]
+        self._color_by_id[car_id] = color
+        return color
+
+    def _effective_decisions_from_bus(
+        self,
+        defaults: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Resolve decisions consumed by world physics from V2X bus messages.
+
+        This keeps a concrete flow: ML -> bus publish -> world control.
+        If a message is dropped/missing, fallback remains the ML decision.
+        """
+        effective = {vid: dict(dec) for vid, dec in defaults.items()}
+        for msg in self._bus.poll("v2v.state"):
+            sender = str(msg.sender).upper()
+            if sender not in effective:
+                continue
+            decision = str(msg.payload.get("decision", "none")).upper()
+            if decision in ("GO", "STOP"):
+                effective[sender]["decision"] = decision
+        return effective
+
     def _tick(self, dt: float) -> None:
-        # 1. Build vehicle list with rich UI fields
-        player_dict = self._make_vehicle_dict(
-            self._world.my_car, "PLAYER", _VEHICLE_COLORS[0]
-        )
-        traffic_dicts: List[Dict[str, Any]] = [
-            self._make_vehicle_dict(car, f"TRAFFIC_{i}", _VEHICLE_COLORS[(i + 1) % len(_VEHICLE_COLORS)])
-            for i, car in enumerate(self._world.traffic)
-        ]
-        all_vehicles = [player_dict] + traffic_dicts
+        all_cars = self._world.all_cars()
+
+        # 1. Build local neighborhood view for each car
+        others_by_id: Dict[str, List[Car]] = {}
+        for ego in all_cars:
+            others_by_id[ego.id] = [other for other in all_cars if other is not ego]
 
         # 2. Compute an ML decision for each car instance
-        all_cars: List[Tuple[str, Car]] = [("PLAYER", self._world.my_car)] + [
-            (f"TRAFFIC_{i}", car) for i, car in enumerate(self._world.traffic)
-        ]
         decisions: Dict[str, Any] = {}
-        for vid, car in all_cars:
-            others = [other for _, other in all_cars if other is not car]
-            decisions[vid] = self._infer_for_car(car, others)
+        for car in all_cars:
+            decisions[car.id] = self._infer_for_car(car, others_by_id[car.id])
 
-        # 3. Publish to real V2X bus
-        self._bus.publish(
-            topic="v2v.state",
-            sender="PLAYER",
-            payload={
-                **decisions.get("PLAYER", {"decision": "none"}),
-                "position": self._world.my_car.as_dict(),
-                "traffic": [c.as_dict() for c in self._world.traffic],
-                "sign": self._world.current_sign,
-            },
-        )
+        # 3. Publish V2X state from each standalone car entity
+        for car in all_cars:
+            self._bus.publish(
+                topic="v2v.state",
+                sender=car.id,
+                payload=car.v2x_payload(
+                    sign=self._world.current_sign,
+                    others=others_by_id[car.id],
+                    decision=decisions.get(car.id, {"decision": "none"}),
+                ),
+            )
 
-        # 4. Build intersection metadata
+        # 4. Feed physics through bus-resolved decisions + safety guard.
+        effective_decisions = self._effective_decisions_from_bus(decisions)
+        self._world.update_physics(dt=dt, decisions=effective_decisions)
+
+        moved_cars = self._world.all_cars()
+
+        # 5. Build vehicle list with rich UI fields from updated world state.
+        all_vehicles: List[Dict[str, Any]] = [
+            self._make_vehicle_dict(car, self._color_for_car(car.id))
+            for car in moved_cars
+        ]
+
+        # 6. Build intersection metadata (UI-compatible + extensible)
         sign = self._world.current_sign
         intersection_meta: Dict[str, Any] = {
             "signs": {"N": sign, "S": sign, "E": sign, "W": sign},
             "lane_count": 2,
             "box_size": 100,
+            "safety_interventions": self._world.safety_interventions,
+            "collision_resolutions": self._world.collision_resolutions,
+            "intersections": [
+                {
+                    "id": "INT_000",
+                    "center": [0.0, 0.0],
+                    "box_size": 100,
+                    "signs": {"N": sign, "S": sign, "E": sign, "W": sign},
+                }
+            ],
         }
 
-        # 5. Advance physics
-        self._world.update_physics(dt=dt)
-
-        # 6. Atomic swap
+        # 7. Atomic swap
         with self._lock:
             self._vehicles = all_vehicles
-            self._decisions = decisions
+            self._decisions = effective_decisions
             self._intersection = intersection_meta

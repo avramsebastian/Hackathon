@@ -26,14 +26,30 @@ def main() -> None:
     log = logging.getLogger("main")
     log.info("Starting V2X Intersection Safety Simulator")
 
+    vehicle_count_raw = os.getenv("SIM_VEHICLE_COUNT", "6")
+    seed_raw = os.getenv("SIM_RANDOM_SEED")
+    try:
+        vehicle_count = max(1, int(vehicle_count_raw))
+    except ValueError:
+        vehicle_count = 6
+
+    random_seed = None
+    if seed_raw:
+        try:
+            random_seed = int(seed_raw)
+        except ValueError:
+            random_seed = None
+
     bridge = SimBridge(
         tick_rate_hz=10.0,
         drop_rate=0.0,
         latency_ms=0,
+        vehicle_count=vehicle_count,
+        random_seed=random_seed,
     )
     bridge.start()
 
-    print("Controls: SPACE=pause  +/-=zoom  F3=debug  L=legend  F12=screenshot  R=reset")
+    print("Controls: SPACE=pause  +/-=zoom  F3=debug  F12=screenshot  R=reset")
 
     try:
         # Blocks until the PyGame window is closed

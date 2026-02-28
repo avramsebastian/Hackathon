@@ -84,8 +84,19 @@ def draw_vehicle_panel(
     frame: int,
 ) -> None:
     sh = screen.get_height()
-    n = max(1, len(vehicles))
-    panel_h = HUD_PAD * 2 + HUD_ROW_H * n + 24  # +24 for header
+    max_panel_h = max(120, sh - CONTROL_BAR_H - TOP_BAR_H - 16)
+    base_h = HUD_PAD * 2 + 24
+    more_h = 18
+    max_rows = max(1, (max_panel_h - base_h - more_h) // HUD_ROW_H)
+
+    vehicles_sorted = sorted(vehicles, key=lambda v: str(v.get("id", "")))
+    visible = vehicles_sorted[:max_rows]
+    hidden = max(0, len(vehicles_sorted) - len(visible))
+
+    panel_h = base_h + HUD_ROW_H * max(1, len(visible))
+    if hidden > 0:
+        panel_h += more_h
+
     panel_y = sh - CONTROL_BAR_H - panel_h - 6
     panel_rect = pygame.Rect(6, panel_y, HUD_PANEL_W, panel_h)
 
@@ -96,7 +107,7 @@ def draw_vehicle_panel(
     render_text(screen, _f("md"), "Active Vehicles", (panel_rect.x + HUD_PAD, panel_rect.y + HUD_PAD), COLOR_HUD_ACCENT)
 
     y = panel_rect.y + HUD_PAD + 24
-    for v in vehicles:
+    for v in visible:
         vid = v["id"]
         speed = v.get("speed", 0.0)
         color = _tuple_color(v.get("color", (180, 180, 180)))
@@ -130,6 +141,15 @@ def draw_vehicle_panel(
                 )
 
         y += HUD_ROW_H
+
+    if hidden > 0:
+        render_text(
+            screen,
+            _f("sm"),
+            f"+{hidden} more",
+            (panel_rect.x + HUD_PAD, panel_rect.bottom - HUD_PAD - 12),
+            COLOR_HUD_DIM,
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
