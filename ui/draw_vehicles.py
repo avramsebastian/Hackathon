@@ -84,21 +84,27 @@ class VehicleRenderer:
         state.in_detection = distance <= self.DETECTION_RADIUS_PX
 
         decision = self._normalize_decision(ml_decision)
-        if state.in_detection and decision == "go":
-            target = (*self.GO_COLOR, self.ZONE_GO_ALPHA)
-        elif state.in_detection and decision == "stop":
+        if decision == "stop":
             target = (*self.STOP_COLOR, self.ZONE_STOP_ALPHA)
+        elif state.in_detection and decision == "go":
+            target = (*self.GO_COLOR, self.ZONE_GO_ALPHA)
         else:
             target = (0, 0, 0, 0)
         self._update_zone_transition(state, target)
 
         if state.zone_current[3] > 0:
+            lane_end = circle_center
+            if decision == "stop":
+                # STOP should paint lane segment from current car position to the intersection.
+                to_vehicle = state.render_pos - self.center
+                if to_vehicle.length_squared() > 0 and to_vehicle.dot(approach_vec) > 0:
+                    lane_end = state.render_pos
             overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
             pygame.draw.line(
                 overlay,
                 state.zone_current,
                 (int(self.center.x), int(self.center.y)),
-                (int(circle_center.x), int(circle_center.y)),
+                (int(lane_end.x), int(lane_end.y)),
                 self.LANE_WIDTH + 8,
             )
             surface.blit(overlay, (0, 0))
