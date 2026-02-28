@@ -14,7 +14,7 @@ def setup_logging(level=logging.INFO):
     ch = logging.StreamHandler()
     ch.setFormatter(fmt)
 
-    fh = RotatingFileHandler("sim.log", maxBytes=1_000_000, backupCount=2)
+    fh = RotatingFileHandler("hexa.log", maxBytes=1_000_000, backupCount=2)
     fh.setFormatter(fmt)
 
     root.handlers.clear()
