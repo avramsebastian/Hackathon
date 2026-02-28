@@ -52,4 +52,6 @@ class ViewConstants:
         ("CONFLICT", (255, 136, 0)),
     )
 
+    SPEED_UNIT = "kmh"
+
     SCREENSHOT_DIR = "screenshots"

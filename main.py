@@ -33,6 +33,8 @@ def main() -> None:
     )
     bridge.start()
 
+    print("Controls: SPACE=pause  +/-=zoom  F3=debug  L=legend  F12=screenshot  R=reset")
+
     try:
         # Blocks until the PyGame window is closed
         run_pygame_view(bridge, width=1000, height=700, fps=60)

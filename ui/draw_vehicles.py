@@ -230,6 +230,22 @@ class VehicleRenderer:
             approach = pygame.Vector2(0, -1)
         long_span = max(self.width, self.height) * 0.65
         start = self.center + approach * long_span
+
+        # Generate turn paths for LEFT / RIGHT directions
+        direction = self._get(vehicle, "direction")
+        if isinstance(direction, str):
+            rel_dir = direction.strip().upper()
+            heading = -approach.normalize() if approach.length_squared() > 0 else pygame.Vector2(1, 0)
+            if rel_dir == "LEFT":
+                exit_vec = pygame.Vector2(heading.y, -heading.x)
+                end = self.center + exit_vec * long_span
+                return [start, self.center.copy(), end]
+            elif rel_dir == "RIGHT":
+                exit_vec = pygame.Vector2(-heading.y, heading.x)
+                end = self.center + exit_vec * long_span
+                return [start, self.center.copy(), end]
+
+        # FORWARD or default: straight through
         end = self.center - approach * long_span
         return [start, self.center.copy(), end]
 
@@ -302,7 +318,7 @@ class VehicleRenderer:
     def _speed_mps(self, vehicle: Any) -> float:
         raw = self._as_float(self._get(vehicle, "speed", "velocity", default=0.0))
         speed = abs(raw if raw is not None else 0.0)
-        unit = str(self._get(vehicle, "speed_unit", "unit", default="mps")).strip().lower()
+        unit = str(self._get(vehicle, "speed_unit", "unit", default="kmh")).strip().lower()
         if unit in {"kmh", "kph", "km/h"}:
             return speed / 3.6
         if unit in {"mph"}:
@@ -330,6 +346,23 @@ class VehicleRenderer:
         direction = self._get(vehicle, "direction")
         if isinstance(direction, str):
             key = direction.strip().upper()
+
+            # Relative directions: FORWARD / LEFT / RIGHT
+            if key in {"FORWARD", "LEFT", "RIGHT"}:
+                approach = self._infer_approach_vector(vehicle, render_pos)
+                heading_vec = -approach
+                if heading_vec.length_squared() == 0:
+                    heading_vec = pygame.Vector2(1, 0)
+                heading_vec = heading_vec.normalize()
+                if key == "FORWARD":
+                    return heading_vec
+                elif key == "LEFT":
+                    # 90° left turn in screen coords (Y-down)
+                    return pygame.Vector2(heading_vec.y, -heading_vec.x)
+                else:  # RIGHT
+                    return pygame.Vector2(-heading_vec.y, heading_vec.x)
+
+            # Cardinal directions
             if key in {"N", "NORTH", "SOUTHBOUND"}:
                 return pygame.Vector2(0, 1)
             if key in {"S", "SOUTH", "NORTHBOUND"}:

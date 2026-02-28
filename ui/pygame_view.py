@@ -101,7 +101,25 @@ class PygameIntersectionView(
             vehicles_payload = self.bus.get_vehicles() or []
 
         vehicles: List[Any]
-        if isinstance(vehicles_payload, Mapping):
+        intersection: Any = {}
+
+        # ── New ML-input format: {"my_car": {...}, "sign": ..., "traffic": [...]}
+        if isinstance(vehicles_payload, Mapping) and "my_car" in vehicles_payload:
+            vehicles = []
+            my_car = dict(vehicles_payload["my_car"])
+            my_car.setdefault("id", "PLAYER")
+            vehicles.append(my_car)
+            for i, t in enumerate(vehicles_payload.get("traffic", [])):
+                td = dict(t)
+                td.setdefault("id", f"TRAFFIC_{i}")
+                vehicles.append(td)
+            sign = str(vehicles_payload.get("sign", "YIELD")).strip().upper()
+            intersection = {
+                "signs": {"N": sign, "S": sign, "E": sign, "W": sign},
+                "lane_count": 2,
+                "box_size": 100,
+            }
+        elif isinstance(vehicles_payload, Mapping):
             vehicles = []
             for key, raw_vehicle in vehicles_payload.items():
                 if isinstance(raw_vehicle, Mapping):
@@ -122,12 +140,12 @@ class PygameIntersectionView(
                 except Exception:
                     decisions[vehicle_id] = "none"
 
-        intersection: Any = {}
-        if hasattr(self.bus, "get_intersection"):
-            try:
-                intersection = self.bus.get_intersection() or {}
-            except Exception:
-                intersection = {}
+        if not intersection:
+            if hasattr(self.bus, "get_intersection"):
+                try:
+                    intersection = self.bus.get_intersection() or {}
+                except Exception:
+                    intersection = {}
 
         return vehicles, decisions, intersection
 
@@ -162,6 +180,8 @@ class PygameIntersectionView(
                         continue
                     if event.key == pygame.K_SPACE:
                         self.paused = not self.paused
+                        if hasattr(self.bus, 'set_paused'):
+                            self.bus.set_paused(self.paused)
                     elif event.key == pygame.K_F3:
                         self.show_debug = not self.show_debug
                     elif event.key == pygame.K_l:
@@ -171,6 +191,11 @@ class PygameIntersectionView(
                         self.vehicle_states.clear()
                         self._hud_scroll_offset = 0
                         self._conflict_total = 0
+                        self.paused = False
+                        if hasattr(self.bus, 'reset'):
+                            self.bus.reset()
+                        if hasattr(self.bus, 'set_paused'):
+                            self.bus.set_paused(False)
                     elif event.key == pygame.K_F12:
                         self._take_screenshot()
                     elif event.key in (pygame.K_EQUALS, pygame.K_PLUS):
@@ -188,6 +213,14 @@ class PygameIntersectionView(
                 self._draw_splash(self.screen, self.time_seconds)
                 pygame.display.flip()
                 continue
+
+            # ---- auto-pause when simulation finishes -------------------- #
+            if (not self.paused
+                    and hasattr(self.bus, 'is_finished')
+                    and self.bus.is_finished()):
+                self.paused = True
+                if hasattr(self.bus, 'set_paused'):
+                    self.bus.set_paused(True)
 
             # ---- simulation tick ---------------------------------------- #
             if not self.paused:
