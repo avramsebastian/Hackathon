@@ -1,61 +1,91 @@
 ml package
 ==========
 
-Submodules
-----------
+Subpackages
+-----------
 
-ml.Car module
--------------
+ml.entities subpackage
+^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: ml.Car
+.. automodule:: ml.entities
    :members:
    :show-inheritance:
    :undoc-members:
 
-ml.Directions module
---------------------
+ml.entities.Car module
+""""""""""""""""""""""
 
-.. automodule:: ml.Directions
+.. automodule:: ml.entities.Car
    :members:
    :show-inheritance:
    :undoc-members:
 
-ml.Intersections module
------------------------
+ml.entities.Directions module
+"""""""""""""""""""""""""""""
 
-.. automodule:: ml.Intersections
+.. automodule:: ml.entities.Directions
    :members:
    :show-inheritance:
    :undoc-members:
 
-ml.Learn module
----------------
+ml.entities.Intersections module
+""""""""""""""""""""""""""""""""
 
-.. automodule:: ml.Learn
+.. automodule:: ml.entities.Intersections
    :members:
    :show-inheritance:
    :undoc-members:
 
-ml.Sign module
---------------
+ml.entities.Sign module
+"""""""""""""""""""""""
 
-.. automodule:: ml.Sign
+.. automodule:: ml.entities.Sign
    :members:
    :show-inheritance:
    :undoc-members:
 
-ml.features module
-------------------
+ml.learn subpackage
+^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: ml.features
+ml.learn.GenerateData module
+""""""""""""""""""""""""""""
+
+.. automodule:: ml.learn.GenerateData
    :members:
    :show-inheritance:
    :undoc-members:
 
-ml.model module
----------------
+ml.learn.Train module
+"""""""""""""""""""""
 
-.. automodule:: ml.model
+.. automodule:: ml.learn.Train
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+ml.learn.Test module
+""""""""""""""""""""
+
+.. automodule:: ml.learn.Test
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+ml.comunication subpackage
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ml.comunication.Inference module
+""""""""""""""""""""""""""""""""
+
+.. automodule:: ml.comunication.Inference
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+ml.comunication.api module
+""""""""""""""""""""""""""
+
+.. automodule:: ml.comunication.api
    :members:
    :show-inheritance:
    :undoc-members:

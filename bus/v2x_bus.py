@@ -18,6 +18,7 @@ import random
 import logging
 from typing import Dict, List, Optional
 from .message import V2XMessage
+from .metrics import BusMetrics
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ class V2XBus:
         self._pending_ack: Dict[str, float] = {}
         self.drop_rate = drop_rate
         self.latency_ms = latency_ms
+        self.metrics = BusMetrics()
 
     def publish(
         self,
@@ -65,6 +67,7 @@ class V2XBus:
         """
         if self._maybe_drop():
             log.warning("packet_dropped topic=%s sender=%s", topic, sender)
+            self.metrics.dropped += 1
             return None
 
         msg_id = str(uuid.uuid4())
@@ -81,6 +84,7 @@ class V2XBus:
         if require_ack:
             self._pending_ack[msg_id] = msg.ts
 
+        self.metrics.published += 1
         log.info("publish topic=%s sender=%s id=%s", topic, sender, msg_id)
         return msg_id
 

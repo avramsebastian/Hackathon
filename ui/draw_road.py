@@ -25,7 +25,6 @@ from ui.constants import (
     COLOR_TREE_TRUNK, COLOR_TREE_CANOPY_A, COLOR_TREE_CANOPY_B,
     COLOR_HOUSE_WALL, COLOR_HOUSE_ROOF_A, COLOR_HOUSE_ROOF_B,
     COLOR_HOUSE_DOOR, COLOR_HOUSE_WINDOW,
-    COLOR_PERSON_SKIN, COLOR_PERSON_SHIRT_A, COLOR_PERSON_SHIRT_B,
     ROAD_HALF_W, SIDEWALK_W, ROAD_LENGTH, LANE_WIDTH_M,
     DASH_LEN, DASH_GAP,
 )
@@ -43,8 +42,6 @@ _DECORATIONS: List[Tuple[Any, ...]] = [
     ("tree",  48,  58,  2.6),
     ("house", 30,  42,  12, 9, COLOR_HOUSE_ROOF_A),
     ("house", 58,  50,  10, 8, COLOR_HOUSE_ROOF_B),
-    ("person", 13,  4, COLOR_PERSON_SHIRT_A),
-    ("person", 13,  8, COLOR_PERSON_SHIRT_B),
     # NW quadrant
     ("tree", -24,  20,  2.6),
     ("tree", -42,  35,  3.0),
@@ -52,14 +49,12 @@ _DECORATIONS: List[Tuple[Any, ...]] = [
     ("tree", -70,  42,  3.4),
     ("house", -32, 44, 11, 9, COLOR_HOUSE_ROOF_B),
     ("house", -55, 56, 10, 8, COLOR_HOUSE_ROOF_A),
-    ("person", -13, 3, COLOR_PERSON_SHIRT_B),
     # SE quadrant
     ("tree",  24, -20,  2.8),
     ("tree",  40, -36,  3.0),
     ("tree",  62, -48,  2.4),
     ("tree",  32, -58,  2.6),
     ("house", 48, -30, 12, 9, COLOR_HOUSE_ROOF_A),
-    ("person", 13, -5, COLOR_PERSON_SHIRT_A),
     # SW quadrant
     ("tree", -22, -24,  3.0),
     ("tree", -50, -32,  2.6),
@@ -67,7 +62,6 @@ _DECORATIONS: List[Tuple[Any, ...]] = [
     ("tree", -30, -58,  2.4),
     ("house", -38, -42, 11, 10, COLOR_HOUSE_ROOF_B),
     ("house", -60, -62, 10, 8, COLOR_HOUSE_ROOF_A),
-    ("person", -13, -6, COLOR_PERSON_SHIRT_B),
 ]
 
 
@@ -327,8 +321,7 @@ def _draw_decorations(screen: pygame.Surface, cam: Camera) -> None:
             _draw_tree(screen, cam, dec[1], dec[2], dec[3])
         elif kind == "house":
             _draw_house(screen, cam, dec[1], dec[2], dec[3], dec[4], dec[5])
-        elif kind == "person":
-            _draw_person(screen, cam, dec[1], dec[2], dec[3])
+
 
 
 def _draw_tree(
@@ -376,17 +369,6 @@ def _draw_house(
         pygame.draw.rect(screen, COLOR_HOUSE_WINDOW, (rect.right - rect.w // 5 - win_sz, rect.y + roof_h + 2, win_sz, win_sz))
 
 
-def _draw_person(
-    screen: pygame.Surface, cam: Camera,
-    wx: float, wy: float, shirt_color: Tuple[int, ...],
-) -> None:
-    sx, sy = cam.world_to_screen(wx, wy)
-    sx, sy = int(sx), int(sy)
-    r = max(1, int(0.6 * cam.zoom))
-    # Body
-    pygame.draw.circle(screen, shirt_color, (sx, sy + r), r)
-    # Head
-    pygame.draw.circle(screen, COLOR_PERSON_SKIN, (sx, sy - r // 2), max(1, r * 2 // 3))
 
 
 # ── tiny helpers ──────────────────────────────────────────────────────────────

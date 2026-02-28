@@ -4,13 +4,15 @@ sim/world.py
 ============
 Entity-based intersection world.
 
-This module no longer models one ``my_car`` plus ``traffic``. Instead it keeps
-only a scalable list of standalone car entities (`cars[]`). Every car can be
-used as ego for ML inference, and every car can publish its own V2X payload.
+This module manages a flat list of :class:`Car` entities.  Every car can
+be used as the ego vehicle for ML inference, and every car can publish
+its own V2X payload.  The :class:`World` class owns the physics loop,
+stop-sign enforcement, optional collision guard, and spawn logic.
 """
 
 from __future__ import annotations
 
+import logging
 import math
 import random
 from dataclasses import dataclass, field
@@ -22,13 +24,35 @@ from sim.traffic_policy import (
     pair_safe_distance_m,
 )
 
+log = logging.getLogger("world")
+
 _ML_DIRECTIONS: Tuple[str, ...] = ("FORWARD", "LEFT", "RIGHT")
 _APPROACHES: Tuple[str, ...] = ("W", "N", "E", "S")
 
 
 @dataclass
 class Car:
-    """A standalone vehicle entity."""
+    """A standalone vehicle entity.
+
+    Attributes
+    ----------
+    id : str
+        Unique identifier (e.g. ``CAR_000``).
+    x, y : float
+        World-space position (metres from intersection centre).
+    speed : float
+        Current speed in km/h.
+    ml_direction : str
+        Intended manoeuvre: ``FORWARD``, ``LEFT``, or ``RIGHT``.
+    approach : str
+        Approach arm the car entered from: ``W``, ``N``, ``E``, or ``S``.
+    vx, vy : float
+        Unit velocity vector (+1 / −1 / 0).
+    stop_wait_s : float
+        Seconds the car has been stopped at a STOP sign.
+    stop_completed : bool
+        True once the mandatory STOP wait has been fulfilled.
+    """
 
     id: str
     x: float
@@ -44,6 +68,8 @@ class Car:
     vy: float = 0.0
     passed: bool = field(default=False, repr=False)
     stopped: bool = field(default=False, repr=False)
+    stop_wait_s: float = field(default=0.0, repr=False)
+    stop_completed: bool = field(default=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.cruise_speed <= 0.0:
@@ -51,6 +77,7 @@ class Car:
 
     # ── movement ──────────────────────────────────────────────────────────
     def move(self, dt: float) -> None:
+        """Advance the car along its velocity vector for *dt* seconds."""
         if self.stopped:
             return
         speed_mps = self.speed / 3.6
@@ -59,7 +86,9 @@ class Car:
 
     # ── helpers ───────────────────────────────────────────────────────────
     def has_passed(self, threshold: float = 10.0) -> bool:
-        """True once the car is *threshold* metres past the origin."""
+        """True once the car is *threshold* metres past the origin
+        along its travel axis.
+        """
         if self.vx > 0 and self.x > threshold:
             return True
         if self.vx < 0 and self.x < -threshold:
@@ -71,7 +100,9 @@ class Car:
         return False
 
     def as_dict(self) -> dict:
-        """Return a serializable car payload."""
+        """Serialisable mapping of ``id``, ``x``, ``y``, ``speed``,
+        ``direction`` (ML) and ``role``.
+        """
         return {
             "id": self.id,
             "x": self.x,
@@ -82,9 +113,25 @@ class Car:
         }
 
     def ml_payload(self, sign: str, others: Sequence["Car"]) -> Dict[str, Any]:
-        """Build ML input using this car as ego and all other cars as traffic."""
+        """Build the JSON-compatible dict expected by
+        :func:`ml.comunication.Inference.fa_inferenta_din_json`.
+        """
         return {
             "my_car": self.as_dict(),
+            "sign": sign,
+            "traffic": [car.as_dict() for car in others if car.id != self.id],
+        }
+
+    def state_payload(self, sign: str, others: Sequence["Car"]) -> Dict[str, Any]:
+        """
+        Build a V2X *state-only* payload (no decision).
+
+        This is what a real car would broadcast on the V2V channel:
+        its own position/speed plus the sign it sees and neighbours
+        it detects locally.  Decisions travel on a separate topic.
+        """
+        return {
+            "position": self.as_dict(),
             "sign": sign,
             "traffic": [car.as_dict() for car in others if car.id != self.id],
         }
@@ -108,11 +155,22 @@ class Car:
 
 
 class World:
-    """
-    Entity-based intersection scenario.
+    """Entity-based intersection scenario.
 
-    Cars spawn randomly on approach arms and move through the intersection.
-    After passing the centre, they decelerate and eventually stop.
+    Cars spawn on random approach arms and drive through a single
+    intersection.  After passing, they coast to a stop.
+
+    Parameters
+    ----------
+    num_cars : int
+        Number of vehicles to spawn.
+    seed : int or None
+        Random seed for reproducibility.
+    policy : SafetyPolicy or None
+        Tunable constants; uses defaults when *None*.
+    priority_axis : str
+        ``'EW'`` or ``'NS'`` — determines which approaches get PRIORITY
+        signs and which get STOP / YIELD.
     """
 
     def __init__(
@@ -133,6 +191,7 @@ class World:
         self.collision_resolutions: int = 0
         self.green_approach: str = "W"
         self._green_ttl_s: float = 0.0
+        self._tick_count: int = 0
         self._init_cars()
 
     # ── initialisation / reset ────────────────────────────────────────────
@@ -176,17 +235,40 @@ class World:
         decisions: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         """
-        Advance every car using ML decisions + safety guard.
+        Advance every car using ML decisions as the primary control signal.
 
-        The safety layer is authoritative and can override ML "GO" decisions to
-        prevent overlaps in the simulation.
+        Optional world-level heuristic layers (virtual signal / collision guard)
+        can be enabled through ``SafetyPolicy`` for backward compatibility.
         """
         decisions = decisions or {}
-        self._update_virtual_signal(dt)
+        self._tick_count += 1
+        tick = self._tick_count
+        if self.policy.world_signal_scheduler_enabled:
+            self._update_virtual_signal(dt)
 
-        targets = self._build_target_speeds(decisions)
-        interventions = self._apply_collision_guard(targets, dt)
-        self.safety_interventions += interventions
+        targets = self._build_target_speeds(decisions, dt)
+
+        # ── Debug: log car state before collision guard ───────────────
+        if tick % 10 == 1:
+            log.debug("=== TICK %d ===", tick)
+            for car in self.cars:
+                sign = self.sign_for_car(car)
+                dist = self._distance_to_stop_line(car)
+                dec = decisions.get(car.id, {})
+                ml_dec = dec.get("decision", "?")
+                log.debug(
+                    "  %s  pos=(%.1f,%.1f) spd=%.1f cruise=%.1f "
+                    "sign=%s dist_line=%.1f passed=%s stopped=%s "
+                    "stop_wait=%.2f stop_done=%s ml=%s target=%.1f",
+                    car.id, car.x, car.y, car.speed, car.cruise_speed,
+                    sign, dist, car.passed, car.stopped,
+                    car.stop_wait_s, car.stop_completed, ml_dec,
+                    targets.get(car.id, -1),
+                )
+
+        if self.policy.world_collision_guard_enabled:
+            interventions = self._apply_collision_guard(targets, dt, tick)
+            self.safety_interventions += interventions
 
         self._apply_speed_targets(targets, dt)
 
@@ -195,7 +277,8 @@ class World:
             if not car.passed and car.has_passed(self.policy.pass_threshold_m):
                 car.passed = True
 
-        self.collision_resolutions += self._resolve_overlaps()
+        if self.policy.world_overlap_resolver_enabled:
+            self.collision_resolutions += self._resolve_overlaps()
 
         all_passed = all(c.passed for c in self.cars)
         if all_passed:
@@ -238,7 +321,7 @@ class World:
         distance from already spawned cars.
         """
         approach = self._rng.choice(_APPROACHES)
-        speed = self._rng.uniform(24.0, self.policy.speed_limit_kmh + 8.0)
+        speed = self._rng.uniform(36.0, self.policy.speed_limit_kmh + 8.0)
         ml_direction = self._rng.choice(_ML_DIRECTIONS)
         role = self._rng.choices(
             ("civilian", "ambulance", "police"),
@@ -302,34 +385,110 @@ class World:
                 return False
         return True
 
+    def _distance_to_stop_line(self, car: Car) -> float:
+        """Distance from car to its stop line along the travel axis.
+
+        The stop line sits at ``policy.stop_line_offset_m`` from the
+        intersection centre on the car's approach side.  Returns a
+        positive value when the car hasn't reached the line yet,
+        zero/negative when it has passed.
+        """
+        edge = self.policy.stop_line_offset_m
+        if car.vx > 0:       # W → E
+            return -car.x - edge
+        elif car.vx < 0:     # E → W
+            return car.x - edge
+        elif car.vy < 0:     # N → S
+            return car.y - edge
+        elif car.vy > 0:     # S → N
+            return -car.y - edge
+        return math.hypot(car.x, car.y)
+
     # ── safety / control ─────────────────────────────────────────────────
 
-    def _build_target_speeds(self, decisions: Dict[str, Dict[str, Any]]) -> Dict[str, float]:
+    def _build_target_speeds(self, decisions: Dict[str, Dict[str, Any]], dt: float = 0.1) -> Dict[str, float]:
         targets: Dict[str, float] = {}
         for car in self.cars:
-            decision = decisions.get(car.id, {}).get("decision", "none")
-            target = self._target_speed_from_decision(car, decision)
-            if self._must_yield_to_signal(car):
+            raw_decision = decisions.get(car.id, {})
+            if isinstance(raw_decision, dict):
+                decision_payload = raw_decision
+            else:
+                decision_payload = {"decision": raw_decision}
+            target = self._target_speed_from_decision(car, decision_payload)
+            if self.policy.world_signal_scheduler_enabled and self._must_yield_to_signal(car):
                 dist = math.hypot(car.x, car.y)
                 if dist <= self.policy.red_hard_radius_m:
                     target = 0.0
                 else:
                     target = min(target, self.policy.red_soft_speed_kmh)
+
+            # ── Stop / Yield enforcement ──────────────────────────────
+            sign = self.sign_for_car(car)
+            required_wait = 0.0
+            if sign == "STOP":
+                required_wait = self.policy.stop_sign_wait_s     # 0.2 s
+            elif sign == "YIELD":
+                required_wait = self.policy.stop_sign_wait_s * 0.5  # 0.1 s
+
+            if required_wait > 0.0 and not car.passed:
+                if not car.stop_completed:
+                    dist_to_line = self._distance_to_stop_line(car)
+
+                    if dist_to_line > self.policy.stop_brake_zone_m:
+                        # Still far from the stop line → keep driving at cruise
+                        # regardless of ML STOP so the car doesn't freeze far away.
+                        target = max(target, car.cruise_speed)
+
+                    elif dist_to_line > 0.0:
+                        # ---------- smoothly ramp to 0 at the stop line ----------
+                        # Linear proportion of the brake zone already covered.
+                        ratio = dist_to_line / self.policy.stop_brake_zone_m
+                        approach_target = ratio * car.cruise_speed
+                        # Take the SLOWER of the sign-based ramp and the ML target
+                        # so that ML STOP is honoured within the brake zone.
+                        target = min(target, approach_target)
+
+                        if car.speed < 1.0:
+                            car.stop_wait_s += dt
+                        if car.stop_wait_s >= required_wait:
+                            car.stop_completed = True
+
+                    else:
+                        # Car reached or slightly overshot the stop line.
+                        # Keep it at 0 and keep accumulating wait time.
+                        target = 0.0
+                        if car.speed < 1.0:
+                            car.stop_wait_s += dt
+                        if car.stop_wait_s >= required_wait:
+                            car.stop_completed = True
+                else:
+                    # Mandatory stop fulfilled → proceed through at cruise speed
+                    # even if ML still says STOP.
+                    target = max(target, car.cruise_speed)
+
             targets[car.id] = target
         return targets
 
-    def _target_speed_from_decision(self, car: Car, decision: str) -> float:
-        if decision != "STOP":
-            return car.cruise_speed
+    def _target_speed_from_decision(self, car: Car, decision_payload: Dict[str, Any]) -> float:
+        """
+        Convert one vehicle decision payload into a speed target.
 
-        if car.passed:
-            return car.cruise_speed
+        Contract (scalable):
+        - ``target_speed_kmh`` (numeric) has highest priority.
+        - ``decision == STOP`` maps to ``policy.ml_stop_target_speed_kmh``.
+        - otherwise defaults to cruise speed.
+        """
+        raw_target = decision_payload.get("target_speed_kmh")
+        if raw_target is not None:
+            try:
+                explicit = float(raw_target)
+            except (TypeError, ValueError):
+                explicit = car.cruise_speed
+            return max(0.0, min(explicit, self.policy.ml_max_target_speed_kmh))
 
-        dist_center = math.hypot(car.x, car.y)
-        if dist_center <= self.policy.ml_stop_hard_radius_m:
-            return min(car.cruise_speed, self.policy.ml_stop_soft_speed_kmh)
-        if dist_center <= self.policy.ml_stop_soft_radius_m:
-            return min(car.cruise_speed, self.policy.ml_stop_soft_speed_kmh)
+        decision = str(decision_payload.get("decision", "none")).upper()
+        if decision == "STOP":
+            return max(0.0, self.policy.ml_stop_target_speed_kmh)
         return car.cruise_speed
 
     def _apply_speed_targets(self, targets: Dict[str, float], dt: float) -> None:
@@ -347,18 +506,26 @@ class World:
             else:
                 car.wait_s = max(0.0, car.wait_s - 0.25 * dt)
 
-    def _apply_collision_guard(self, targets: Dict[str, float], dt: float) -> int:
+    def _apply_collision_guard(self, targets: Dict[str, float], dt: float, tick: int = 0) -> int:
         interventions = 0
         n = len(self.cars)
         if n < 2:
             return interventions
 
-        # Two short passes let one pair-wise intervention propagate to others.
-        for _ in range(2):
+        # ── 1.  Cross-approach / general pair-wise guard ──────────────
+        # Runs FIRST so that hard-stops propagate to the following-
+        # distance guard below (followers must see the leader's
+        # reduced target, not its stale cruise speed).
+        for _ in range(3):
             for i in range(n):
                 a = self.cars[i]
                 for j in range(i + 1, n):
                     b = self.cars[j]
+
+                    # Skip pairs where both cars already passed the intersection.
+                    if a.passed and b.passed:
+                        continue
+
                     if not self._pair_needs_guard(a, b, targets, dt):
                         continue
 
@@ -367,16 +534,106 @@ class World:
                     yielder = self._pick_yielder(a, b)
                     current = targets.get(yielder.id, yielder.cruise_speed)
 
-                    # Far conflicts slow down; only close conflicts force a full stop.
+                    # If the yielder hasn't entered the intersection yet,
+                    # hold it at the stop line instead of letting it creep in.
+                    dist_to_line = self._distance_to_stop_line(yielder)
+                    yielder_outside = dist_to_line > 0.0 and not yielder.passed
+
                     if now_dist <= safe_dist * 0.78:
+                        # Very close — hard stop.
                         new_target = 0.0
+                        xreason = "VERY CLOSE hard stop"
+                    elif yielder_outside and dist_to_line < 3.0:
+                        # Near the stop line — hard stop to prevent creeping in.
+                        new_target = 0.0
+                        xreason = "NEAR LINE hard stop"
+                    elif yielder_outside:
+                        # Approaching — ramp speed down toward the line.
+                        ratio = min(1.0, dist_to_line / self.policy.stop_brake_zone_m)
+                        new_target = min(current, ratio * yielder.cruise_speed)
+                        xreason = f"RAMP ratio={ratio:.2f}"
                     else:
-                        new_target = min(current, self.policy.ml_stop_soft_speed_kmh)
+                        new_target = min(current, self.policy.collision_guard_soft_speed_kmh)
+                        xreason = "SOFT CAP"
 
                     if new_target < current:
                         targets[yielder.id] = new_target
                         interventions += 1
+                        if tick % 10 == 1:
+                            other = b if yielder is a else a
+                            log.debug(
+                                "  CROSS: %s yields to %s  dist=%.1f safe=%.1f  "
+                                "d2line=%.1f outside=%s  %s  %.1f->%.1f",
+                                yielder.id, other.id, now_dist, safe_dist,
+                                dist_to_line, yielder_outside, xreason,
+                                current, new_target,
+                            )
+
+        # ── 2.  Same-lane following-distance guard ────────────────────
+        # Runs AFTER cross-guard so followers inherit any hard-stop
+        # that was applied to their leader above.
+        lane_groups: Dict[Tuple[float, float], List[Car]] = {}
+        for c in self.cars:
+            key = (c.vx, c.vy)
+            lane_groups.setdefault(key, []).append(c)
+
+        for (vx, vy), group in lane_groups.items():
+            if len(group) < 2:
+                continue
+            # Sort so the car closest to the intersection is first.
+            if vx > 0:
+                group.sort(key=lambda c: -c.x)   # W→E: largest x first
+            elif vx < 0:
+                group.sort(key=lambda c: c.x)     # E→W: smallest x first
+            elif vy < 0:
+                group.sort(key=lambda c: c.y)     # N→S: smallest y first
+            elif vy > 0:
+                group.sort(key=lambda c: -c.y)    # S→N: largest y first
+
+            for idx in range(1, len(group)):
+                leader = group[idx - 1]
+                follower = group[idx]
+                gap = self._following_gap(leader, follower)
+                safe = pair_safe_distance_m(leader, follower, self.policy)
+
+                if gap < safe * 1.5:
+                    leader_target = targets.get(leader.id, leader.cruise_speed)
+                    # Also consider the leader's actual speed — if it is
+                    # physically much slower than its target (e.g. just
+                    # stopped by cross-guard or waiting at a sign), the
+                    # follower must match the real speed, not the wish.
+                    effective_leader = min(leader_target, leader.speed)
+                    follower_current = targets.get(follower.id, follower.cruise_speed)
+
+                    if gap < safe * 0.8:
+                        new_target = 0.0
+                        reason = "gap<0.8*safe HARD STOP"
+                    elif gap < safe:
+                        new_target = min(follower_current, max(0.0, effective_leader * 0.5))
+                        reason = "gap<safe HALF"
+                    else:
+                        new_target = min(follower_current, effective_leader)
+                        reason = "gap<1.5*safe MATCH"
+
+                    if new_target < follower_current:
+                        targets[follower.id] = new_target
+                        interventions += 1
+                        if tick % 10 == 1:
+                            log.debug(
+                                "  FOLLOW: %s behind %s  gap=%.1f safe=%.1f  "
+                                "%s  leader_eff=%.1f(tgt=%.1f spd=%.1f)  %.1f->%.1f",
+                                follower.id, leader.id, gap, safe,
+                                reason, effective_leader, leader_target, leader.speed,
+                                follower_current, new_target,
+                            )
         return interventions
+
+    @staticmethod
+    def _following_gap(leader: Car, follower: Car) -> float:
+        """Axial distance between two same-direction cars."""
+        if leader.vx != 0:
+            return abs(leader.x - follower.x)
+        return abs(leader.y - follower.y)
 
     def _pair_needs_guard(
         self,
@@ -390,11 +647,44 @@ class World:
         if now <= safe_dist:
             return True
 
+        # ── Time-swept projection ────────────────────────────────────
+        # Check multiple time steps so perpendicular approaches that
+        # converge on the intersection centre don't slip through a
+        # single-snapshot check.
+        va = max(0.0, targets.get(a.id, a.speed)) / 3.6
+        vb = max(0.0, targets.get(b.id, b.speed)) / 3.6
         horizon = max(dt, self.policy.horizon_s)
-        ax, ay = self._project(a, targets.get(a.id, a.speed), horizon)
-        bx, by = self._project(b, targets.get(b.id, b.speed), horizon)
-        nxt = math.hypot(ax - bx, ay - by)
-        return nxt <= safe_dist
+        steps = 4
+        step_dt = horizon / steps
+        for k in range(1, steps + 1):
+            t = step_dt * k
+            ax = a.x + a.vx * va * t
+            ay = a.y + a.vy * va * t
+            bx = b.x + b.vx * vb * t
+            by = b.y + b.vy * vb * t
+            if math.hypot(ax - bx, ay - by) <= safe_dist:
+                return True
+
+        # ── Intersection-zone conflict for perpendicular approaches ──
+        # If both cars are heading into the intersection from different
+        # directions and both will reach the stop line within the
+        # horizon, they *will* conflict at the centre even if the
+        # swept check above missed it (e.g. they arrive at slightly
+        # different times and the step granularity skipped the overlap).
+        if not (a.passed or b.passed):
+            da = self._distance_to_stop_line(a)
+            db = self._distance_to_stop_line(b)
+            perpendicular = (a.vx != 0) != (b.vx != 0)  # one horizontal, one vertical
+            if perpendicular and da >= 0 and db >= 0:
+                # Time each car needs to reach the stop line.
+                eta_a = da / va if va > 0.5 else 999.0
+                eta_b = db / vb if vb > 0.5 else 999.0
+                # Both arrive within a wide window → conflict.
+                window = max(2.5, horizon)
+                if eta_a < window and eta_b < window:
+                    return True
+
+        return False
 
     @staticmethod
     def _project(car: Car, speed_kmh: float, dt: float) -> Tuple[float, float]:
@@ -405,6 +695,21 @@ class World:
         )
 
     def _pick_yielder(self, a: Car, b: Car) -> Car:
+        # A car already inside the intersection (crossed stop line but not yet
+        # through) has effective right-of-way — never make it yield.
+        a_in = self._distance_to_stop_line(a) <= 0.0 and not a.passed
+        b_in = self._distance_to_stop_line(b) <= 0.0 and not b.passed
+        if a_in and not b_in:
+            return b
+        if b_in and not a_in:
+            return a
+
+        # A car that already passed should not be slowed down.
+        if a.passed and not b.passed:
+            return b
+        if b.passed and not a.passed:
+            return a
+
         # Same-lane rear-end guard: trailing car yields.
         if a.vx == b.vx and a.vy == b.vy:
             if a.vx != 0 and abs(a.y - b.y) <= 1.0:
@@ -413,6 +718,15 @@ class World:
             if a.vy != 0 and abs(a.x - b.x) <= 1.0:
                 a_ahead = (a.y - b.y) * a.vy > 0
                 return b if a_ahead else a
+
+        # ── Traffic-sign priority (dominant rule) ─────────────────────
+        # PRIORITY > NO_SIGN > YIELD > STOP.
+        # The car with the weaker sign must always yield.
+        _SIGN_RANK = {"PRIORITY": 3, "NO_SIGN": 2, "YIELD": 1, "STOP": 0}
+        sa = _SIGN_RANK.get(self.sign_for_car(a), 2)
+        sb = _SIGN_RANK.get(self.sign_for_car(b), 2)
+        if sa != sb:
+            return a if sa < sb else b
 
         # Priority scheduler: lower-priority car yields.
         pa = danger_score(a, self.policy)
@@ -501,7 +815,12 @@ class World:
         Last-resort overlap resolver to prevent cars rendering inside each other.
         """
         count = 0
+        tick = self._tick_count
         n = len(self.cars)
+        # Use a fixed hard radius for overlap detection so speed changes
+        # don't create a feedback loop (pair_safe_distance_m shrinks when
+        # we cap speed, causing repeated triggers).
+        hard_radius = self.policy.min_pair_distance_m
         for _ in range(3):
             changed = False
             for i in range(n):
@@ -511,26 +830,41 @@ class World:
                     dx = a.x - b.x
                     dy = a.y - b.y
                     dist = math.hypot(dx, dy)
-                    safe_dist = pair_safe_distance_m(a, b, self.policy)
-                    if dist >= safe_dist:
+                    if dist >= hard_radius:
                         continue
 
                     count += 1
                     changed = True
+
+                    a_spd_before = a.speed
+                    b_spd_before = b.speed
+
                     if dist < 1e-6:
-                        # Degenerate case: nudge deterministically by id ordering.
                         b.x += 0.5
                         b.y += 0.5
                     else:
-                        overlap = (safe_dist - dist) / 2.0
+                        overlap = (hard_radius - dist) / 2.0
                         ux, uy = dx / dist, dy / dist
                         a.x += ux * overlap
                         a.y += uy * overlap
                         b.x -= ux * overlap
                         b.y -= uy * overlap
 
-                    a.speed = min(a.speed, 5.0)
-                    b.speed = min(b.speed, 5.0)
+                    # Only slow the faster car instead of capping both.
+                    if a.speed > b.speed:
+                        a.speed = min(a.speed, max(b.speed, 3.0))
+                    else:
+                        b.speed = min(b.speed, max(a.speed, 3.0))
+
+                    if tick % 10 == 1:
+                        log.debug(
+                            "  OVERLAP: %s & %s  dist=%.1f hard_r=%.1f  "
+                            "nudge=%.2f  %s spd %.1f->%.1f  %s spd %.1f->%.1f",
+                            a.id, b.id, dist, hard_radius,
+                            (hard_radius - dist) / 2.0,
+                            a.id, a_spd_before, a.speed,
+                            b.id, b_spd_before, b.speed,
+                        )
             if not changed:
                 break
         return count

@@ -8,37 +8,41 @@
 
 import os
 import sys
-import sphinx_rtd_dark_mode
 
-# Add the project root to sys.path so Sphinx can import all modules
-sys.path.insert(0, os.path.abspath("../.."))  # assuming conf.py is in docs/source
+# Add the project root to sys.path so Sphinx can import all modules.
+sys.path.insert(0, os.path.abspath("../.."))
 
-project = 'Hexa Hackaton'
-copyright = '2026, Hexa Team'
-author = 'Hexa Team'
-release = '0.0'
+project = "Hexa Hackathon"
+copyright = "2026, Hexa Team"
+author = "Hexa Team"
+release = "0.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     "sphinx.ext.autodoc",    # generate docs from docstrings
-    "sphinx.ext.napoleon",   # parse Google/NumPy style docstrings
-    "sphinx.ext.viewcode",   # add links to source code
-    "sphinx_rtd_dark_mode"
+    "sphinx.ext.napoleon",   # parse Google / NumPy style docstrings
+    "sphinx.ext.viewcode",   # add links to highlighted source code
 ]
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd"  # just the theme name
-default_dark_mode = True
-html_static_path = ['_static']
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
 
-# conf.py
-# -- Mock imports to avoid ModuleNotFoundError during docs build --
-# Mock imports that are optional or heavy
-autodoc_mock_imports = ["pygame"]
+# -- Mock imports to avoid ModuleNotFoundError during docs build --------------
+autodoc_mock_imports = [
+    "pygame",
+    "numpy",
+    "sklearn",
+    "joblib",
+    "pandas",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+]

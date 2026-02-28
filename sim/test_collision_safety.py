@@ -8,12 +8,20 @@ from __future__ import annotations
 import math
 import unittest
 
+from sim.traffic_policy import SafetyPolicy
 from sim.world import Car, World
 
 
 class WorldSafetyTests(unittest.TestCase):
     def test_collision_guard_prevents_overlap(self) -> None:
-        world = World(num_cars=1, seed=1)
+        world = World(
+            num_cars=1,
+            seed=1,
+            policy=SafetyPolicy(
+                world_collision_guard_enabled=True,
+                world_overlap_resolver_enabled=True,
+            ),
+        )
         world.cars = [
             Car(
                 id="CAR_A",
@@ -79,7 +87,7 @@ class WorldSafetyTests(unittest.TestCase):
             world.update_physics(dt=0.1, decisions=decisions)
 
         self.assertLess(car.speed, initial)
-        self.assertLessEqual(car.speed, world.policy.ml_stop_soft_speed_kmh + 0.2)
+        self.assertLessEqual(car.speed, world.policy.ml_stop_target_speed_kmh + 0.2)
 
 
 if __name__ == "__main__":

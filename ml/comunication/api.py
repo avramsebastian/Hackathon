@@ -1,3 +1,21 @@
+"""
+ml/comunication/api.py
+======================
+Optional FastAPI server that exposes the ML model as a REST endpoint.
+
+Start the server::
+
+    python ml/comunication/api.py          # → http://localhost:8000/predict
+
+The ``/predict`` endpoint accepts a JSON body with ``my_car``, ``sign``
+and ``traffic`` fields and returns ``{decision, confidence_go, confidence_stop}``.
+
+.. note::
+
+   This server is **not** required to run the Pygame simulation.
+   It exists for external integrations and testing.
+"""
+
 import sys
 import os
 import uvicorn
@@ -5,65 +23,60 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
 
-# Hack-ul pentru căi, la fel ca în celelalte fișiere
-cale_ml = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if cale_ml not in sys.path:
-    sys.path.append(cale_ml)
-    sys.path.append(os.path.join(cale_ml, 'entities'))
+# ── path setup ────────────────────────────────────────────────────────────────
+_ML_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+for _p in (_ML_ROOT, os.path.join(_ML_ROOT, "entities")):
+    if _p not in sys.path:
+        sys.path.append(_p)
 
-# Importăm funcția ta de inferență pe care tocmai am creat-o
-# Asigură-te că fișierul tău se numește exact Inference.py
 from Inference import fa_inferenta_din_json
 
-# ==========================================
-# 1. DEFINIM STRUCTURA JSON-ULUI (Modele Pydantic)
-# ==========================================
+# ── Pydantic request schemas ─────────────────────────────────────────────────
+
+
 class CarModel(BaseModel):
+    """Single vehicle in the request payload."""
     x: float
     y: float
     speed: float
     direction: str
 
+
 class TrafficStateRequest(BaseModel):
+    """Intersection state submitted to ``/predict``."""
     my_car: CarModel
     sign: str
     traffic: List[CarModel]
 
-# ==========================================
-# 2. INIȚIALIZĂM APLICAȚIA FASTAPI
-# ==========================================
+
+# ── FastAPI application ──────────────────────────────────────────────────────
+
 app = FastAPI(
-    title="BEST Hackathon - V2X AI API",
-    description="API pentru agentul autonom V2X care prezice riscul de coliziune la intersecții.",
-    version="1.0"
+    title="V2X AI Inference API",
+    description="Predicts GO / STOP collision risk at intersections.",
+    version="1.0",
 )
 
-# ==========================================
-# 3. DEFINIM RUTA PENTRU INFERENȚĂ
-# ==========================================
+
 @app.post("/predict")
 def predict_action(state: TrafficStateRequest):
+    """Run ML inference on the provided traffic state."""
     try:
-        # Pydantic transformă automat JSON-ul valid într-un dicționar Python (.model_dump() sau .dict())
-        date_json = state.dict()
-        
-        # Apelăm modelul tău de ML
-        # NOTĂ: Asigură-te că traffic_model.pkl se află în același folder cu api.py
-        rezultat = fa_inferenta_din_json(date_json, model_path="ML/generated/traffic_model.pkl")
-        
-        # Dacă funcția de inferență a returnat o eroare (ex: modelul nu a fost găsit)
-        if "error" in rezultat:
-            raise HTTPException(status_code=500, detail=rezultat["error"])
-            
-        return rezultat
-        
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        data = state.dict()
+        result = fa_inferenta_din_json(
+            data, model_path="ml/generated/traffic_model.pkl",
+        )
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
-# ==========================================
-# 4. RULAREA SERVERULUI
-# ==========================================
+
+# ── Standalone entry point ───────────────────────────────────────────────────
+
 if __name__ == "__main__":
-    print("Pornește serverul V2X AI...")
-    # Rulăm serverul pe portul 8000
+    print("Starting V2X AI server on http://0.0.0.0:8000 …")
     uvicorn.run(app, host="0.0.0.0", port=8000)

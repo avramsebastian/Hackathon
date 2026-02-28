@@ -1,11 +1,21 @@
 """
-V2XBus package: Provides in-memory V2X messaging infrastructure.
+bus \u2014 In-memory V2X messaging infrastructure
+=============================================
 
-Modules:
-    - message: V2XMessage dataclass
-    - v2x_bus: V2XBus transport class
-    - metrics: BusMetrics for tracking statistics
-    - utils: helper functions (ID generation, latency, packet faults)
+Provides a lightweight pub/sub transport layer with optional packet-loss
+and latency simulation, suitable for prototyping V2V and V2I workflows
+without a real network stack.
+
+Modules
+-------
+message
+    :class:`V2XMessage` dataclass.
+v2x_bus
+    :class:`V2XBus` publish / poll / ack transport.
+metrics
+    :class:`BusMetrics` counter snapshot.
+utils
+    ID generation, latency sleep, fault injection.
 """
 
 from .message import V2XMessage

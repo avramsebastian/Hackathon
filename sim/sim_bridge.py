@@ -1,24 +1,19 @@
 """
 sim/sim_bridge.py
 =================
-Runs the simulation loop in a background thread and exposes the methods
-that PygameIntersectionView._poll_bus() expects:
+Background-thread orchestrator tying :mod:`sim.world`, ML inference and
+the :class:`bus.v2x_bus.V2XBus` together.  The UI polls the bridge for
+the latest snapshot without blocking.
 
-    bridge.get_vehicles()               → List[dict]
-    bridge.get_ml_decision(vehicle_id)  → dict  {"decision", "confidence_go", "confidence_stop"}
-    bridge.get_intersection()           → dict  {"signs", "lane_count", "box_size"}
-    bridge.is_finished()                → bool
-    bridge.reset()                      → None
-
-Usage in main.py (or anywhere):
-
-    from sim.sim_bridge import SimBridge
-    from ui.pygame_view import run_pygame_view
-
-    bridge = SimBridge()
-    bridge.start()
-    run_pygame_view(bridge)          # blocks until window is closed
-    bridge.stop()
+Public API consumed by :mod:`ui.pygame_view`
+--------------------------------------------
+* ``get_vehicles()``          → ``List[dict]``
+* ``get_ml_decision(id)``     → ``dict``
+* ``get_all_ml_decisions()``  → ``Dict[str, dict]``
+* ``get_intersection()``      → ``dict``
+* ``is_finished()``           → ``bool``
+* ``reset()``                 → ``None``
+* ``set_paused(bool)``        → ``None``
 """
 
 from __future__ import annotations
@@ -31,6 +26,9 @@ import logging
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 # ── path setup ────────────────────────────────────────────────────────────────
+# The ML package uses relative imports that assume its own sub-packages
+# are on sys.path.  We add them here once so the rest of the codebase
+# can import ``from comunication.Inference import …`` without per-file hacks.
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 for _p in [
     _ROOT,
@@ -44,7 +42,7 @@ for _p in [
         sys.path.insert(0, _p)
 
 from sim.world import World, Car
-from sim.traffic_policy import danger_score
+from sim.traffic_policy import SafetyPolicy, danger_score
 from bus.v2x_bus import V2XBus
 from comunication.Inference import fa_inferenta_din_json
 
@@ -103,12 +101,31 @@ def _road_line(car: Car) -> List[Tuple[float, float]]:
 
 
 class SimBridge:
-    """
-    Simulation orchestrator + bus adapter.
+    """Simulation orchestrator running in a background thread.
 
-    The background thread ticks World → ML → V2XBus every ``1/tick_rate_hz``
-    seconds and caches the results.  The UI thread calls the public methods
-    to read the latest snapshot without blocking.
+    The thread calls :meth:`_tick` at ``tick_rate_hz``, advancing
+    :class:`~sim.world.World`, running ML inference for every car,
+    routing decisions through the :class:`~bus.v2x_bus.V2XBus`, and
+    caching the results for the UI thread.
+
+    Parameters
+    ----------
+    tick_rate_hz : float
+        Simulation ticks per second.
+    drop_rate : float
+        V2X bus packet drop probability (0.0–1.0).
+    latency_ms : int
+        Simulated bus latency in milliseconds.
+    model_path : str or None
+        Path to the ML model ``.pkl`` file.
+    vehicle_count : int
+        Number of cars to spawn.
+    random_seed : int or None
+        Seed for reproducibility.
+    priority_axis : str
+        ``'EW'`` or ``'NS'``.
+    policy : SafetyPolicy or None
+        Tunable constants.
     """
 
     def __init__(
@@ -120,6 +137,7 @@ class SimBridge:
         vehicle_count: int = 6,
         random_seed: Optional[int] = None,
         priority_axis: str = "EW",
+        policy: Optional[SafetyPolicy] = None,
     ) -> None:
         self._tick_rate_hz = tick_rate_hz
         self._model_path = model_path or os.path.join(
@@ -131,6 +149,7 @@ class SimBridge:
         self._world = World(
             num_cars=vehicle_count,
             seed=random_seed,
+            policy=policy,
             priority_axis=priority_axis,
         )
         self._bus = V2XBus(drop_rate=drop_rate, latency_ms=latency_ms)
@@ -150,7 +169,7 @@ class SimBridge:
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
     def start(self) -> None:
-        """Start the background simulation loop."""
+        """Spawn the background simulation thread."""
         if self._running:
             return
         self._running = True
@@ -161,7 +180,7 @@ class SimBridge:
         log.info("SimBridge started at %.1f Hz", self._tick_rate_hz)
 
     def stop(self) -> None:
-        """Stop the background loop and join the thread."""
+        """Signal the thread to stop and wait for it to join."""
         self._running = False
         if self._thread:
             self._thread.join(timeout=2.0)
@@ -174,14 +193,17 @@ class SimBridge:
             return list(self._vehicles)
 
     def get_ml_decision(self, vehicle_id: str) -> Dict[str, Any]:
+        """Return the latest ML decision for one vehicle."""
         with self._lock:
             return dict(self._decisions.get(vehicle_id.upper(), {"decision": "none"}))
 
     def get_all_ml_decisions(self) -> Dict[str, Dict[str, Any]]:
+        """Return all ML decisions keyed by vehicle ID."""
         with self._lock:
             return {vid: dict(dec) for vid, dec in self._decisions.items()}
 
     def get_intersection(self) -> Dict[str, Any]:
+        """Return intersection metadata (signs, metrics, etc.)."""
         with self._lock:
             return dict(self._intersection)
 
@@ -247,11 +269,18 @@ class SimBridge:
             model_path=self._model_path,
         )
         if raw.get("status") == "success":
-            return {
-                "decision": raw["decision"],
+            result: Dict[str, Any] = {
+                "decision": str(raw.get("decision", "none")).upper(),
                 "confidence_go": float(raw.get("confidence_go", 0.0)),
                 "confidence_stop": float(raw.get("confidence_stop", 0.0)),
             }
+            # Pass through extra ML outputs (e.g., target_speed_kmh) for
+            # scalable control contracts without changing world internals.
+            for key, value in raw.items():
+                if key in {"status", "decision", "confidence_go", "confidence_stop"}:
+                    continue
+                result[key] = value
+            return result
         return {"decision": "none"}
 
     def _color_for_car(self, car_id: str) -> Tuple[int, int, int]:
@@ -264,62 +293,103 @@ class SimBridge:
 
     def _effective_decisions_from_bus(
         self,
-        defaults: Dict[str, Dict[str, Any]],
+        all_cars: Sequence[Car],
     ) -> Dict[str, Dict[str, Any]]:
         """
-        Resolve decisions consumed by world physics from V2X bus messages.
+        Poll decisions delivered via the ``i2v.command`` bus topic.
 
-        This keeps a concrete flow: ML -> bus publish -> world control.
-        If a message is dropped/missing, fallback remains the ML decision.
+        Flow: ML inference → bus.publish("i2v.command") → bus.poll → here.
+
+        If a decision message was *dropped* or *delayed* by the bus
+        (simulated packet loss / latency), the safe fallback for that
+        vehicle is **STOP** — modelling what a real V2X-equipped car
+        should do when it loses communication with infrastructure.
         """
-        effective = {vid: dict(dec) for vid, dec in defaults.items()}
-        for msg in self._bus.poll("v2v.state"):
-            sender = str(msg.sender).upper()
-            if sender not in effective:
+        # Safe default: every car STOPs unless a decision message arrives.
+        effective: Dict[str, Dict[str, Any]] = {
+            car.id: {
+                "decision": "STOP",
+                "confidence_go": 0.0,
+                "confidence_stop": 1.0,
+            }
+            for car in all_cars
+        }
+
+        for msg in self._bus.poll("i2v.command"):
+            payload = msg.payload if isinstance(msg.payload, dict) else {}
+            vehicle_id = str(payload.get("vehicle_id", "")).upper()
+            if not vehicle_id or vehicle_id not in effective:
                 continue
-            decision = str(msg.payload.get("decision", "none")).upper()
-            if decision in ("GO", "STOP"):
-                effective[sender]["decision"] = decision
+
+            decision_data: Dict[str, Any] = {}
+            for key in ("decision", "confidence_go", "confidence_stop", "target_speed_kmh"):
+                if key not in payload:
+                    continue
+                val = payload[key]
+                if key == "decision":
+                    decision_data[key] = str(val).upper()
+                else:
+                    try:
+                        decision_data[key] = float(val)
+                    except (TypeError, ValueError):
+                        pass
+
+            if decision_data:
+                effective[vehicle_id] = decision_data
+
         return effective
 
     def _tick(self, dt: float) -> None:
         all_cars = self._world.all_cars()
 
-        # 1. Build local neighborhood view for each car
+        # 1. Build local neighbourhood view for each car.
         others_by_id: Dict[str, List[Car]] = {}
         for ego in all_cars:
             others_by_id[ego.id] = [other for other in all_cars if other is not ego]
 
-        # 2. Compute an ML decision for each car instance
-        decisions: Dict[str, Any] = {}
-        for car in all_cars:
-            decisions[car.id] = self._infer_for_car(car, others_by_id[car.id])
-
-        # 3. Publish V2X state from each standalone car entity
+        # 2. Each car broadcasts its *state* on the V2V channel.
+        #    (No decision here — just position, speed, sign, neighbours.)
         for car in all_cars:
             self._bus.publish(
                 topic="v2v.state",
                 sender=car.id,
-                payload=car.v2x_payload(
+                payload=car.state_payload(
                     sign=self._world.sign_for_car(car),
                     others=others_by_id[car.id],
-                    decision=decisions.get(car.id, {"decision": "none"}),
                 ),
             )
 
-        # 4. Feed physics through bus-resolved decisions + safety guard.
-        effective_decisions = self._effective_decisions_from_bus(decisions)
+        # 3. Infrastructure / edge ML: compute a decision for every car.
+        raw_decisions: Dict[str, Dict[str, Any]] = {}
+        for car in all_cars:
+            raw_decisions[car.id] = self._infer_for_car(car, others_by_id[car.id])
+
+        # 4. Publish each ML decision on the I2V command channel.
+        #    These messages are subject to bus drop_rate & latency_ms,
+        #    so the car may never receive them → safe fallback = STOP.
+        for car in all_cars:
+            dec = raw_decisions.get(car.id, {"decision": "none"})
+            self._bus.publish(
+                topic="i2v.command",
+                sender="INFRA",
+                payload={"vehicle_id": car.id, **dec},
+            )
+
+        # 5. Resolve effective decisions from bus-delivered messages.
+        effective_decisions = self._effective_decisions_from_bus(all_cars)
+
+        # 6. Feed physics through bus-resolved decisions + safety guard.
         self._world.update_physics(dt=dt, decisions=effective_decisions)
 
         moved_cars = self._world.all_cars()
 
-        # 5. Build vehicle list with rich UI fields from updated world state.
+        # 7. Build vehicle list with rich UI fields from updated world state.
         all_vehicles: List[Dict[str, Any]] = [
             self._make_vehicle_dict(car, self._color_for_car(car.id))
             for car in moved_cars
         ]
 
-        # 6. Build intersection metadata (UI-compatible + extensible)
+        # 8. Build intersection metadata (UI-compatible + extensible).
         signs = self._world.get_signs()
         intersection_meta: Dict[str, Any] = {
             "signs": signs,
@@ -328,6 +398,7 @@ class SimBridge:
             "green_approach": self._world.green_approach,
             "safety_interventions": self._world.safety_interventions,
             "collision_resolutions": self._world.collision_resolutions,
+            "bus_metrics": self._bus.metrics.report(),
             "intersections": [
                 {
                     "id": "INT_000",
@@ -338,7 +409,7 @@ class SimBridge:
             ],
         }
 
-        # 7. Atomic swap
+        # 9. Atomic swap — UI thread reads these via public methods.
         with self._lock:
             self._vehicles = all_vehicles
             self._decisions = effective_decisions

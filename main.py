@@ -18,7 +18,15 @@ import logging
 
 from logging_setup import setup_logging
 from sim.sim_bridge import SimBridge
+from sim.traffic_policy import SafetyPolicy
 from ui.pygame_view import run_pygame_view
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def main() -> None:
@@ -40,17 +48,30 @@ def main() -> None:
         except ValueError:
             random_seed = None
 
+    tick_rate_raw = os.getenv("SIM_TICK_HZ", "30.0")
+    try:
+        tick_rate_hz = max(2.0, float(tick_rate_raw))
+    except ValueError:
+        tick_rate_hz = 30.0
+
     priority_axis = os.getenv("SIM_PRIORITY_AXIS", "EW").upper()
     if priority_axis not in ("EW", "NS"):
         priority_axis = "EW"
 
+    world_policy = SafetyPolicy(
+        world_signal_scheduler_enabled=_env_bool("SIM_WORLD_SIGNAL", False),
+        world_collision_guard_enabled=_env_bool("SIM_WORLD_COLLISION_GUARD", True),
+        world_overlap_resolver_enabled=_env_bool("SIM_WORLD_OVERLAP_RESOLVER", True),
+    )
+
     bridge = SimBridge(
-        tick_rate_hz=10.0,
+        tick_rate_hz=tick_rate_hz,
         drop_rate=0.0,
         latency_ms=0,
         vehicle_count=vehicle_count,
         random_seed=random_seed,
         priority_axis=priority_axis,
+        policy=world_policy,
     )
     bridge.start()
 
