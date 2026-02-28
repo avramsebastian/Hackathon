@@ -1,6 +1,5 @@
 import sys
 import os
-import json
 import joblib
 import numpy as np
 
@@ -14,15 +13,11 @@ from entities.Intersections import Intersections
 from entities.Sign import Sign
 from entities.Directions import Directions
 
-# ==========================================
-# MAGIA AICI: Păstrăm modelul în RAM!
-# ==========================================
 _MODEL_CACHE = None
 
 def get_model(model_path):
     global _MODEL_CACHE
     if _MODEL_CACHE is None:
-        print(f"[AI] Se încarcă modelul în memoria RAM din '{model_path}' o singură dată...")
         _MODEL_CACHE = joblib.load(model_path)
     return _MODEL_CACHE
 
@@ -45,7 +40,6 @@ def parse_sign(sign_str):
 
 def fa_inferenta_din_json(date_json, model_path="traffic_model.pkl"):
     try:
-        # Folosim modelul din RAM, durează 0.0001 secunde!
         model = get_model(model_path)
     except FileNotFoundError:
         return {"error": "Model not found"}
@@ -69,18 +63,16 @@ def fa_inferenta_din_json(date_json, model_path="traffic_model.pkl"):
             direction=parse_direction(t_data.get("direction", "FORWARD"))
         ))
         
-    stare_intersectie = Intersections(my_car, traffic, semn)
+    stare_intersectie = Intersections(my_car, traffic, semn, max_tracked_cars=6)
     vector_features = stare_intersectie.get_feature_vector()
     
     input_formatat = np.array(vector_features).reshape(1, -1)
-    
-    # Facem predicția instant
     probabilitati = model.predict_proba(input_formatat)[0]
     
     prob_stop = probabilitati[0]
     prob_go = probabilitati[1]
     
-    decizie = "GO" if prob_go > 0.4 else "STOP"
+    decizie = "GO" if prob_go > 0.5 else "STOP"
     
     return {
         "status": "success",

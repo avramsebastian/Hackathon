@@ -1,42 +1,49 @@
 import pandas as pd
 import joblib
-from sklearn.neural_network import MLPClassifier
+import os
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 
 class TrafficModelTrainer:
     def __init__(self):
-        # Inițializăm un model Deep Learning (Multi-Layer Perceptron)
-        # hidden_layer_sizes=(64, 32) înseamnă 2 straturi ascunse: primul cu 64 neuroni, al doilea cu 32.
-        # activation='relu' este standardul în industrie pentru decizii rapide.
-        self.model = MLPClassifier(
-            hidden_layer_sizes=(64, 32), 
-            activation='relu', 
-            solver='adam', 
-            max_iter=1500, # Am crescut iterațiile pentru că rețelele neuronale învață puțin mai greu
-            random_state=42 # Pentru a avea rezultate reproductibile
+        self.model = RandomForestClassifier(
+            n_estimators=25, 
+            max_depth=12,       
+            random_state=42,
+            n_jobs=-1,
+            class_weight="balanced"
         )
 
-    def train_from_csv(self, train_csv_path, model_save_path="ML/generated/traffic_model.pkl"):
-        print(f"[AI] Se încarcă datele de antrenament din '{train_csv_path}'...")
-        
-        # Citim datele folosind Pandas
+    def train(self, train_csv_path: str, model_save_path: str):
+        print(f"[Model Training] Încărcare date din '{os.path.basename(train_csv_path)}'...")
         df_train = pd.read_csv(train_csv_path)
         
-        # Separăm vectorul de parametri (X) de eticheta corectă (y)
-        X_train = df_train.drop('label', axis=1).values
-        y_train = df_train['label'].values
+        stop_count = len(df_train[df_train['label'] == 0])
+        go_count = len(df_train[df_train['label'] == 1])
+        print(f"[Dataset Stats] Eșantioane GO: {go_count} | Eșantioane STOP: {stop_count}")
         
-        print("[AI] Rețeaua Neuronală se antrenează pe datele primite (Deep Learning)...")
+        X = df_train.drop('label', axis=1).values
+        y = df_train['label'].values
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        
+        print(f"[Model Training] Start antrenament pe {X.shape[1]} parametri...")
         self.model.fit(X_train, y_train)
         
-        # Verificăm acuratețea
-        accuracy = self.model.score(X_train, y_train)
-        print(f"[AI] Antrenament complet! Acuratețe internă: {accuracy * 100:.2f}%")
+        acc_train = self.model.score(X_train, y_train)
+        acc_test = self.model.score(X_test, y_test)
         
-        # Salvăm rețeaua neuronală antrenată pe disc
+        print("\n--- RAPORT DE PERFORMANȚĂ ---")
+        print(f"Acuratețe Învățare (Train): {acc_train * 100:.2f}%")
+        print(f"Acuratețe Validare (Test):  {acc_test * 100:.2f}%\n")
+        
         joblib.dump(self.model, model_save_path)
-        print(f"[AI] Modelul Deep Learning a fost salvat cu succes în '{model_save_path}'.\n")
+        print(f"[Model Training] Model serializat și salvat în '{os.path.basename(model_save_path)}'.")
 
 if __name__ == "__main__":
+    cale_ml = os.path.abspath(os.path.dirname(__file__))
+    cale_csv = os.path.join(cale_ml, "..", "generated", "train_dataset.csv")
+    cale_model = os.path.join(cale_ml, "..", "generated", "traffic_model.pkl")
+    
     trainer = TrafficModelTrainer()
-    # Apelăm funcția dându-i CSV-ul generat anterior
-    trainer.train_from_csv("ML/generated/train_dataset.csv")
+    trainer.train(cale_csv, cale_model)

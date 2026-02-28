@@ -1,7 +1,8 @@
 import pandas as pd
 import joblib
+import os
 
-def test_saved_model(val_csv_path, model_path="ML/generated/traffic_model.pkl", output_file="ML/generated/rezultate_test.txt"):
+def test_saved_model(val_csv_path, model_path, output_file):
     print(f"[Test] Se încarcă modelul antrenat din '{model_path}'...")
     
     try:
@@ -16,20 +17,21 @@ def test_saved_model(val_csv_path, model_path="ML/generated/traffic_model.pkl", 
     X_val = df_val.drop('label', axis=1).values
     y_val = df_val['label'].values
     
-    # Deschidem fișierul în modul scriere ("w")
+    # Deschidem fișierul în modul scriere
     with open(output_file, "w", encoding="utf-8") as file:
         file.write("==================================================\n")
         file.write("         RAPORT TESTARE MODEL V2X AI\n")
         file.write("==================================================\n\n")
 
-        # 1. Acuratețea generală pe setul de validare
+        # 1. Acuratețea generală
         accuracy = model.score(X_val, y_val)
-        file.write(f"[Test] Acuratețe pe date noi (Validare): {accuracy * 100:.2f}%\n\n")
+        mesaj_acuratete = f"[Test] Acuratețe pe date noi (Validare): {accuracy * 100:.2f}%\n"
+        print(mesaj_acuratete)
+        file.write(mesaj_acuratete + "\n")
         
-        # 2. Extragem Coeficientul pentru cele 30 de situații
-        file.write("--- DEMONSTRAȚIE COEFICIENȚI (500 scenarii) ---\n")
-        
-        for i in range(500):
+        # 2. Extragem Coeficientul pentru 30 de situații
+        file.write("--- DEMONSTRAȚIE COEFICIENȚI (30 scenarii) ---\n")
+        for i in range(30):
             features = X_val[i].reshape(1, -1)
             label_corect = y_val[i]
             
@@ -47,7 +49,14 @@ def test_saved_model(val_csv_path, model_path="ML/generated/traffic_model.pkl", 
             else:
                 file.write(" -> Decizie Model: AI-ul alege să OPREASCĂ.\n")
                 
-    print(f"\n✅ Gata! Toate rezultatele au fost salvate cu succes în fișierul '{output_file}'.")
+    print(f"\n✅ Gata! Rezultatele au fost salvate în '{output_file}'.")
 
 if __name__ == "__main__":
-    test_saved_model("ML/generated/val_dataset.csv")
+    cale_ml = os.path.abspath(os.path.dirname(__file__))
+    
+    # Mapăm exact folderul generated
+    cale_csv = os.path.join(cale_ml, "..", "generated", "val_dataset.csv")
+    cale_model = os.path.join(cale_ml, "..", "generated", "traffic_model.pkl")
+    cale_out = os.path.join(cale_ml, "..", "generated", "rezultate_test.txt")
+    
+    test_saved_model(cale_csv, cale_model, cale_out)
