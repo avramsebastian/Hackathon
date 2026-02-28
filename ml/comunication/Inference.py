@@ -4,17 +4,27 @@ import json
 import joblib
 import numpy as np
 
-# Hack-ul pentru căi
 cale_ml = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(cale_ml)
-sys.path.append(os.path.join(cale_ml, 'entities'))
+if cale_ml not in sys.path:
+    sys.path.append(cale_ml)
+    sys.path.append(os.path.join(cale_ml, 'entities'))
 
 from entities.Car import Car
 from entities.Intersections import Intersections
 from entities.Sign import Sign
 from entities.Directions import Directions
 
-# --- Funcții de "Traducere" din JSON (String) în Enum-urile tale ---
+# ==========================================
+# MAGIA AICI: Păstrăm modelul în RAM!
+# ==========================================
+_MODEL_CACHE = None
+
+def get_model(model_path):
+    global _MODEL_CACHE
+    if _MODEL_CACHE is None:
+        print(f"[AI] Se încarcă modelul în memoria RAM din '{model_path}' o singură dată...")
+        _MODEL_CACHE = joblib.load(model_path)
+    return _MODEL_CACHE
 
 def parse_direction(dir_str):
     mapping = {
@@ -22,7 +32,7 @@ def parse_direction(dir_str):
         "RIGHT": Directions.RIGHT,
         "FORWARD": Directions.FORWARD
     }
-    return mapping.get(dir_str.upper(), Directions.FORWARD) # Default: FORWARD
+    return mapping.get(dir_str.upper(), Directions.FORWARD)
 
 def parse_sign(sign_str):
     mapping = {
@@ -31,20 +41,15 @@ def parse_sign(sign_str):
         "PRIORITY": Sign.PRIORITY,
         "NO_SIGN": Sign.NO_SIGN
     }
-    return mapping.get(sign_str.upper(), Sign.NO_SIGN) # Default: NO_SIGN
+    return mapping.get(sign_str.upper(), Sign.NO_SIGN)
 
-# --- Funcția Principală de Inferență ---
-
-def fa_inferenta_din_json(date_json, model_path="ML/generated/traffic_model.pkl"):
-    # 1. Încărcăm modelul
+def fa_inferenta_din_json(date_json, model_path="traffic_model.pkl"):
     try:
-        model = joblib.load(model_path)
+        # Folosim modelul din RAM, durează 0.0001 secunde!
+        model = get_model(model_path)
     except FileNotFoundError:
-        print("Eroare: Nu găsesc modelul! Asigură-te că ai rulat Train.py înainte.")
         return {"error": "Model not found"}
 
-    # 2. Parsăm datele din dicționarul primit din JSON
-    # Extragem mașina principală
     mc_data = date_json.get("my_car", {})
     my_car = Car(
         x=float(mc_data.get("x", 0.0)),
@@ -53,10 +58,8 @@ def fa_inferenta_din_json(date_json, model_path="ML/generated/traffic_model.pkl"
         direction=parse_direction(mc_data.get("direction", "FORWARD"))
     )
     
-    # Extragem semnul de circulație
     semn = parse_sign(date_json.get("sign", "NO_SIGN"))
     
-    # Extragem traficul (lista de alte mașini)
     traffic = []
     for t_data in date_json.get("traffic", []):
         traffic.append(Car(
@@ -66,27 +69,18 @@ def fa_inferenta_din_json(date_json, model_path="ML/generated/traffic_model.pkl"
             direction=parse_direction(t_data.get("direction", "FORWARD"))
         ))
         
-    # 3. Creăm starea și extragem vectorul (cei 22 de parametri)
     stare_intersectie = Intersections(my_car, traffic, semn)
     vector_features = stare_intersectie.get_feature_vector()
     
-    # 4. Formatăm pentru model și facem predicția
     input_formatat = np.array(vector_features).reshape(1, -1)
+    
+    # Facem predicția instant
     probabilitati = model.predict_proba(input_formatat)[0]
     
     prob_stop = probabilitati[0]
     prob_go = probabilitati[1]
     
-    # 5. Afișăm în consolă
-    print("=========================================")
-    print("           REZULTAT AI LIVE              ")
-    print("=========================================")
-    print(f"Șanse să fie SIGUR (Accelerează): {prob_go * 100:.1f}%")
-    print(f"Șanse de COLIZIUNE (Frânează):    {prob_stop * 100:.1f}%")
-    
-    # 6. Returnăm rezultatul (ca să-l poți trimite înapoi prin API)
-    decizie = "GO" if prob_go > 0.5 else "STOP"
-    print(f"-> DECIZIE: {decizie}")
+    decizie = "GO" if prob_go > 0.4 else "STOP"
     
     return {
         "status": "success",
@@ -94,45 +88,3 @@ def fa_inferenta_din_json(date_json, model_path="ML/generated/traffic_model.pkl"
         "confidence_go": float(prob_go),
         "confidence_stop": float(prob_stop)
     }
-
-# ==========================================
-# TESTĂM CU UN JSON SIMULAT
-# ==========================================
-if __name__ == "__main__":
-    
-    # Acesta este exact formatul JSON pe care front-end-ul ar trebui să ți-l trimită
-    json_input_string = """
-    {
-        "my_car": {
-            "x": 0.0,
-            "y": -10.0,
-            "speed": 15.0,
-            "direction": "FORWARD"
-        },
-        "sign": "YIELD",
-        "traffic": [
-            {
-                "x": -12.0,
-                "y": 2.0,
-                "speed": 30.0,
-                "direction": "RIGHT"
-            },
-            {
-                "x": 40.0,
-                "y": -5.0,
-                "speed": 10.0,
-                "direction": "LEFT"
-            }
-        ]
-    }
-    """
-    
-    # 1. Transformăm String-ul JSON primit într-un Dicționar Python
-    date_parsite = json.loads(json_input_string)
-    
-    # 2. Trimitem dicționarul către funcția noastră de inferență
-    rezultat = fa_inferenta_din_json(date_parsite)
-    
-    # (Opțional) Afișăm rezultatul final tot sub formă de JSON, cum ar pleca spre frontend
-    print("\n--- Răspunsul care se întoarce la Frontend/Simulator ---")
-    print(json.dumps(rezultat, indent=4))
