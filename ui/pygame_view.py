@@ -16,10 +16,12 @@ Module layout
 
 from __future__ import annotations
 
+import math
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+import numpy as np
 import pygame
 
 from .constants import ViewConstants
@@ -42,6 +44,11 @@ class PygameIntersectionView(
     Inherits drawing logic from focused mixin modules so each file
     stays small and single-purpose.
     """
+
+    # Direction → one-hot index (matches ml/entities/Directions.py enum order)
+    _DIR_ONEHOT = {"LEFT": [1,0,0], "RIGHT": [0,1,0], "FORWARD": [0,0,1]}
+    # Sign → one-hot index (matches ml/entities/Sign.py enum order)
+    _SIGN_ONEHOT = {"STOP": [1,0,0,0], "YIELD": [0,1,0,0], "PRIORITY": [0,0,1,0], "NO_SIGN": [0,0,0,1]}
 
     def __init__(self, bus: Any, width: int = 1000, height: int = 700, fps: int = 60):
         self.bus = bus
@@ -69,6 +76,16 @@ class PygameIntersectionView(
         self._conflict_total = 0
         self._screenshot_flash_until = 0.0
 
+        # Pre-load ML model once so we can run inference for every car
+        self._ml_model = None
+        try:
+            import joblib
+            _root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            model_path = os.path.join(_root, "ml", "generated", "traffic_model.pkl")
+            self._ml_model = joblib.load(model_path)
+        except Exception:
+            pass  # ML unavailable — decisions will stay as-is
+
     # ------------------------------------------------------------------ #
     #  Resize                                                              #
     # ------------------------------------------------------------------ #
@@ -91,6 +108,70 @@ class PygameIntersectionView(
         path = os.path.join(self.SCREENSHOT_DIR, f"sim_{stamp}.png")
         pygame.image.save(self.screen, path)
         self._screenshot_flash_until = self.time_seconds + 0.35
+
+    # ------------------------------------------------------------------ #
+    #  Per-vehicle ML inference                                            #
+    # ------------------------------------------------------------------ #
+    def _infer_for_vehicle(
+        self,
+        vehicle: Any,
+        all_vehicles: Sequence[Any],
+        sign: str,
+    ) -> Dict[str, Any]:
+        """Run ML inference from *vehicle*'s perspective.
+
+        Builds a 22-feature vector identical to
+        ``ml.entities.Intersections.get_feature_vector`` and predicts
+        GO / STOP using the cached model.  Returns a decision dict
+        compatible with what the bridge produces.
+        """
+        if self._ml_model is None:
+            return {"decision": "none"}
+
+        # ── my_car features (6): x, y, speed, direction_onehot(3) ────────
+        mx = float(self._get(vehicle, "x", default=0.0))
+        my = float(self._get(vehicle, "y", default=0.0))
+        ms = float(self._get(vehicle, "speed", default=0.0))
+        md = str(self._get(vehicle, "direction", default="FORWARD")).strip().upper()
+        features: List[float] = [mx, my, ms]
+        features.extend(self._DIR_ONEHOT.get(md, [0, 0, 1]))  # default FORWARD
+
+        # ── sign features (4): onehot ────────────────────────────────────
+        features.extend(self._SIGN_ONEHOT.get(sign, [0, 0, 0, 1]))
+
+        # ── 2 closest other cars (12): (x, y, speed, dir_onehot) × 2 ────
+        my_id = self._vehicle_id(vehicle)
+        others = [v for v in all_vehicles if self._vehicle_id(v) != my_id]
+        others.sort(
+            key=lambda v: math.hypot(
+                float(self._get(v, "x", default=0.0)),
+                float(self._get(v, "y", default=0.0)),
+            )
+        )
+        for i in range(2):
+            if i < len(others):
+                o = others[i]
+                features.extend([
+                    float(self._get(o, "x", default=0.0)),
+                    float(self._get(o, "y", default=0.0)),
+                    float(self._get(o, "speed", default=0.0)),
+                ])
+                od = str(self._get(o, "direction", default="FORWARD")).strip().upper()
+                features.extend(self._DIR_ONEHOT.get(od, [0, 0, 1]))
+            else:
+                features.extend([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        try:
+            inp = np.array(features, dtype=float).reshape(1, -1)
+            probs = self._ml_model.predict_proba(inp)[0]
+            prob_stop, prob_go = float(probs[0]), float(probs[1])
+            return {
+                "decision": "GO" if prob_go > 0.5 else "STOP",
+                "confidence_go": prob_go,
+                "confidence_stop": prob_stop,
+            }
+        except Exception:
+            return {"decision": "none"}
 
     # ------------------------------------------------------------------ #
     #  Bus polling                                                         #
@@ -146,6 +227,24 @@ class PygameIntersectionView(
                     intersection = self.bus.get_intersection() or {}
                 except Exception:
                     intersection = {}
+
+        # ── Run ML inference for every vehicle that lacks a real decision ─
+        if self._ml_model is not None and vehicles:
+            # Determine each vehicle's approach-side sign
+            signs_map = self._extract_signs(intersection) if intersection else {}
+            default_sign = (
+                str(intersection.get("sign", "YIELD")).upper()
+                if isinstance(intersection, Mapping)
+                else "YIELD"
+            )
+            for vehicle in vehicles:
+                vid = self._vehicle_id(vehicle)
+                existing = decisions.get(vid)
+                if self._normalize_decision(existing) not in ("go", "stop"):
+                    # Pick sign for this vehicle's approach
+                    approach = str(self._get(vehicle, "approach", default="")).strip().upper()[:1]
+                    sign = signs_map.get(approach, default_sign)
+                    decisions[vid] = self._infer_for_vehicle(vehicle, vehicles, sign)
 
         return vehicles, decisions, intersection
 

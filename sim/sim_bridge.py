@@ -213,10 +213,9 @@ class SimBridge:
             "y": car.y,
             "speed": car.speed,
             "speed_unit": _SPEED_UNIT,
-            "direction": _cardinal_direction(car),
+            "direction": car.ml_direction,
             "approach": car.approach,
             "color": color,
-            "road_line": _road_line(car),
         }
 
     # ── tick ──────────────────────────────────────────────────────────────────

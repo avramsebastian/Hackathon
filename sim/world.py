@@ -98,7 +98,7 @@ class World:
         # Player car — approaching from the West
         self.my_car = Car(
             x=-100.0, y=-L, speed=35.0,
-            ml_direction="FORWARD", approach="W",
+            ml_direction="LEFT", approach="W",
             vx=1, vy=0,
         )
 
