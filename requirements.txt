@@ -2,6 +2,8 @@ pygame
 numpy
 pandas
 scikit-learn
+uvicorn
+fastapi
 
 torch
 torchvision
