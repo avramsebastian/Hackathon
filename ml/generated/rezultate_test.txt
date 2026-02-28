@@ -1,0 +1,2507 @@
+==================================================
+         RAPORT TESTARE MODEL V2X AI
+==================================================
+
+[Test] Acuratețe pe date noi (Validare): 94.60%
+
+--- DEMONSTRAȚIE COEFICIENȚI (500 scenarii) ---
+
+Scenariul 1 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 2 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.3%
+ -> Coeficient OPRIRE generat de AI:     1.7%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 3 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 87.1%
+ -> Coeficient OPRIRE generat de AI:     12.9%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 4 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 5 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 6 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 7 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 8 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 9 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 10 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 11 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 12 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 13 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 14 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 15 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 2.0%
+ -> Coeficient OPRIRE generat de AI:     98.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 16 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 17 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 18 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 19 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 20 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 21 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 33.4%
+ -> Coeficient OPRIRE generat de AI:     66.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 22 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.1%
+ -> Coeficient OPRIRE generat de AI:     1.9%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 23 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.6%
+ -> Coeficient OPRIRE generat de AI:     0.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 24 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 2.3%
+ -> Coeficient OPRIRE generat de AI:     97.7%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 25 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 26 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 27 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 28 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 90.4%
+ -> Coeficient OPRIRE generat de AI:     9.6%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 29 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 30 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 31 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 93.8%
+ -> Coeficient OPRIRE generat de AI:     6.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 32 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 33 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 47.9%
+ -> Coeficient OPRIRE generat de AI:     52.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 34 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 35 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 36 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.7%
+ -> Coeficient OPRIRE generat de AI:     0.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 37 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 38 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 39 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 40 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.1%
+ -> Coeficient OPRIRE generat de AI:     0.9%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 41 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.5%
+ -> Coeficient OPRIRE generat de AI:     0.5%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 42 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 43 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 44 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 45 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 46 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 79.0%
+ -> Coeficient OPRIRE generat de AI:     21.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 47 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 48 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 49 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 50 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 6.6%
+ -> Coeficient OPRIRE generat de AI:     93.4%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 51 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 52 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.2%
+ -> Coeficient OPRIRE generat de AI:     1.8%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 53 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 54 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 55 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 56 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 57 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 58 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 59 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 60 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 3.1%
+ -> Coeficient OPRIRE generat de AI:     96.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 61 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.6%
+ -> Coeficient OPRIRE generat de AI:     99.4%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 62 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 63 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 64 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 65 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 66 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.3%
+ -> Coeficient OPRIRE generat de AI:     0.7%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 67 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 31.9%
+ -> Coeficient OPRIRE generat de AI:     68.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 68 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 69 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 70 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 71 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 24.1%
+ -> Coeficient OPRIRE generat de AI:     75.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 72 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 73 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 74 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 75 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 76 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 77 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 78 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.7%
+ -> Coeficient OPRIRE generat de AI:     0.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 79 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 80 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 81 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 82 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 83 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 84 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 85 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 86 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 2.5%
+ -> Coeficient OPRIRE generat de AI:     97.5%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 87 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 88 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 89 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 90 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 91 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 92 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 93 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 96.0%
+ -> Coeficient OPRIRE generat de AI:     4.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 94 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 95 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 96 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 99.4%
+ -> Coeficient OPRIRE generat de AI:     0.6%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 97 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.7%
+ -> Coeficient OPRIRE generat de AI:     0.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 98 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 99 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.7%
+ -> Coeficient OPRIRE generat de AI:     1.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 100 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 101 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 2.5%
+ -> Coeficient OPRIRE generat de AI:     97.5%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 102 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 103 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 104 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 105 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 63.6%
+ -> Coeficient OPRIRE generat de AI:     36.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 106 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 107 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 108 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.2%
+ -> Coeficient OPRIRE generat de AI:     0.8%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 109 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 110 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 111 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 112 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 113 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 62.2%
+ -> Coeficient OPRIRE generat de AI:     37.8%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 114 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 115 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 116 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 117 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 118 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 119 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 120 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 121 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 36.8%
+ -> Coeficient OPRIRE generat de AI:     63.2%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 122 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 123 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 4.8%
+ -> Coeficient OPRIRE generat de AI:     95.2%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 124 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 125 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 42.4%
+ -> Coeficient OPRIRE generat de AI:     57.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 126 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 127 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 128 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 129 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 130 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 131 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 12.2%
+ -> Coeficient OPRIRE generat de AI:     87.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 132 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 133 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 1.9%
+ -> Coeficient OPRIRE generat de AI:     98.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 134 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 135 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 136 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 137 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 138 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 139 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 140 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 141 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 142 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.3%
+ -> Coeficient OPRIRE generat de AI:     0.7%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 143 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 74.4%
+ -> Coeficient OPRIRE generat de AI:     25.6%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 144 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 145 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 6.5%
+ -> Coeficient OPRIRE generat de AI:     93.5%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 146 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 9.6%
+ -> Coeficient OPRIRE generat de AI:     90.4%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 147 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 148 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 149 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 150 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 151 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 152 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 153 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 154 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 155 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 156 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 157 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 158 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 159 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 160 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 161 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 162 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.8%
+ -> Coeficient OPRIRE generat de AI:     1.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 163 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 93.2%
+ -> Coeficient OPRIRE generat de AI:     6.8%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 164 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 1.1%
+ -> Coeficient OPRIRE generat de AI:     98.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 165 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 166 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 167 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 168 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 97.0%
+ -> Coeficient OPRIRE generat de AI:     3.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 169 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 9.4%
+ -> Coeficient OPRIRE generat de AI:     90.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 170 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 171 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 172 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 173 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 174 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 175 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 176 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 95.9%
+ -> Coeficient OPRIRE generat de AI:     4.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 177 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 178 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 179 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 180 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.7%
+ -> Coeficient OPRIRE generat de AI:     0.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 181 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 182 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.6%
+ -> Coeficient OPRIRE generat de AI:     0.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 183 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.5%
+ -> Coeficient OPRIRE generat de AI:     1.5%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 184 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 185 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 186 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 187 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 188 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 3.0%
+ -> Coeficient OPRIRE generat de AI:     97.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 189 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 190 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 191 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 192 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 193 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 194 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 195 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 196 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 197 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 198 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 199 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 200 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 201 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 202 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 58.4%
+ -> Coeficient OPRIRE generat de AI:     41.6%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 203 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 204 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.2%
+ -> Coeficient OPRIRE generat de AI:     99.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 205 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 206 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.7%
+ -> Coeficient OPRIRE generat de AI:     0.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 207 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 208 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 209 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 210 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 211 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 212 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 213 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 214 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 215 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 51.7%
+ -> Coeficient OPRIRE generat de AI:     48.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 216 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 217 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 11.3%
+ -> Coeficient OPRIRE generat de AI:     88.7%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 218 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 219 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 220 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 221 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 222 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 223 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 224 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 225 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 226 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 227 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 228 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 229 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 230 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 93.8%
+ -> Coeficient OPRIRE generat de AI:     6.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 231 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 232 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 65.7%
+ -> Coeficient OPRIRE generat de AI:     34.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 233 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 92.6%
+ -> Coeficient OPRIRE generat de AI:     7.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 234 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 235 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 236 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 94.8%
+ -> Coeficient OPRIRE generat de AI:     5.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 237 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 238 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 239 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 240 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 241 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 242 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 243 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.3%
+ -> Coeficient OPRIRE generat de AI:     99.7%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 244 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 95.9%
+ -> Coeficient OPRIRE generat de AI:     4.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 245 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 246 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 247 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 248 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 249 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 250 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 251 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 2.5%
+ -> Coeficient OPRIRE generat de AI:     97.5%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 252 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 253 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 36.7%
+ -> Coeficient OPRIRE generat de AI:     63.3%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 254 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 255 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 97.6%
+ -> Coeficient OPRIRE generat de AI:     2.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 256 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 257 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 258 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 259 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 260 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 261 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 262 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 30.5%
+ -> Coeficient OPRIRE generat de AI:     69.5%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 263 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 32.2%
+ -> Coeficient OPRIRE generat de AI:     67.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 264 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 265 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 266 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 267 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 268 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 269 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 270 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 271 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.8%
+ -> Coeficient OPRIRE generat de AI:     1.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 272 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 273 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 274 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 275 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 276 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.1%
+ -> Coeficient OPRIRE generat de AI:     0.9%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 277 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 278 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 279 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 280 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 281 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 282 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.0%
+ -> Coeficient OPRIRE generat de AI:     1.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 283 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 284 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 285 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 286 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 287 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 288 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.5%
+ -> Coeficient OPRIRE generat de AI:     99.5%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 289 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 84.3%
+ -> Coeficient OPRIRE generat de AI:     15.7%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 290 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 291 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 292 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 293 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 39.9%
+ -> Coeficient OPRIRE generat de AI:     60.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 294 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 295 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 0.4%
+ -> Coeficient OPRIRE generat de AI:     99.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 296 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 297 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 89.5%
+ -> Coeficient OPRIRE generat de AI:     10.5%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 298 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 299 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 300 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 301 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 302 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 303 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 304 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 305 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 306 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 307 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 308 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 309 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 310 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.4%
+ -> Coeficient OPRIRE generat de AI:     0.6%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 311 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 312 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 313 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 314 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 93.7%
+ -> Coeficient OPRIRE generat de AI:     6.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 315 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 316 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 317 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 318 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 4.2%
+ -> Coeficient OPRIRE generat de AI:     95.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 319 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 320 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 321 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 1.9%
+ -> Coeficient OPRIRE generat de AI:     98.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 322 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 323 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 324 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 325 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.4%
+ -> Coeficient OPRIRE generat de AI:     99.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 326 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 327 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 11.5%
+ -> Coeficient OPRIRE generat de AI:     88.5%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 328 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 329 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 330 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 331 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 332 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 333 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 334 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.5%
+ -> Coeficient OPRIRE generat de AI:     0.5%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 335 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 336 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 57.2%
+ -> Coeficient OPRIRE generat de AI:     42.8%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 337 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 338 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 339 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 340 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.2%
+ -> Coeficient OPRIRE generat de AI:     99.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 341 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 9.0%
+ -> Coeficient OPRIRE generat de AI:     91.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 342 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 343 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 344 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 345 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.9%
+ -> Coeficient OPRIRE generat de AI:     99.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 346 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 347 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 348 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 349 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 350 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 351 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.7%
+ -> Coeficient OPRIRE generat de AI:     0.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 352 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.2%
+ -> Coeficient OPRIRE generat de AI:     99.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 353 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 354 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 355 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 356 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 357 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 358 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 359 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 360 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 361 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 362 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 363 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 364 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.5%
+ -> Coeficient OPRIRE generat de AI:     0.5%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 365 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 366 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 367 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 368 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 369 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 370 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 371 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 372 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 373 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 374 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 375 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.3%
+ -> Coeficient OPRIRE generat de AI:     99.7%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 376 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 377 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 4.4%
+ -> Coeficient OPRIRE generat de AI:     95.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 378 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 379 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 380 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.7%
+ -> Coeficient OPRIRE generat de AI:     0.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 381 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 382 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 383 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 384 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 97.2%
+ -> Coeficient OPRIRE generat de AI:     2.8%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 385 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 386 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.4%
+ -> Coeficient OPRIRE generat de AI:     0.6%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 387 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 388 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 29.4%
+ -> Coeficient OPRIRE generat de AI:     70.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 389 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 390 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 391 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 12.0%
+ -> Coeficient OPRIRE generat de AI:     88.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 392 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 393 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 394 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 395 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 396 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 397 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 398 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.4%
+ -> Coeficient OPRIRE generat de AI:     0.6%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 399 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 400 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 401 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 402 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 403 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 404 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 405 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 406 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.6%
+ -> Coeficient OPRIRE generat de AI:     0.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 407 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 2.3%
+ -> Coeficient OPRIRE generat de AI:     97.7%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 408 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 59.2%
+ -> Coeficient OPRIRE generat de AI:     40.8%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 409 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 1.4%
+ -> Coeficient OPRIRE generat de AI:     98.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 410 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 411 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 33.2%
+ -> Coeficient OPRIRE generat de AI:     66.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 412 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 413 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 414 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 415 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 416 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 417 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 418 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 419 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 17.3%
+ -> Coeficient OPRIRE generat de AI:     82.7%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 420 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 24.9%
+ -> Coeficient OPRIRE generat de AI:     75.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 421 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 422 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 17.9%
+ -> Coeficient OPRIRE generat de AI:     82.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 423 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 424 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 28.7%
+ -> Coeficient OPRIRE generat de AI:     71.3%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 425 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 426 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 427 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 2.9%
+ -> Coeficient OPRIRE generat de AI:     97.1%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 428 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 429 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 430 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 431 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 432 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 433 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 434 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 435 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 436 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 437 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 2.8%
+ -> Coeficient OPRIRE generat de AI:     97.2%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 438 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 439 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 96.8%
+ -> Coeficient OPRIRE generat de AI:     3.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 440 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 441 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.2%
+ -> Coeficient OPRIRE generat de AI:     99.8%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 442 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 443 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 444 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 445 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 446 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 91.7%
+ -> Coeficient OPRIRE generat de AI:     8.3%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 447 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 98.6%
+ -> Coeficient OPRIRE generat de AI:     1.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 448 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 41.6%
+ -> Coeficient OPRIRE generat de AI:     58.4%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 449 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 450 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 451 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 452 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 453 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 454 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 455 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 456 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 457 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 93.6%
+ -> Coeficient OPRIRE generat de AI:     6.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 458 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 459 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 460 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 461 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.1%
+ -> Coeficient OPRIRE generat de AI:     99.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 462 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 463 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 464 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 465 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 77.9%
+ -> Coeficient OPRIRE generat de AI:     22.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 466 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 467 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 468 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 469 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 470 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 471 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.9%
+ -> Coeficient OPRIRE generat de AI:     0.1%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 472 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 473 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 474 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 475 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 476 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 477 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 478 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 479 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 480 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 481 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 7.0%
+ -> Coeficient OPRIRE generat de AI:     93.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 482 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 483 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 484 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 51.6%
+ -> Coeficient OPRIRE generat de AI:     48.4%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 485 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 486 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 487 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 488 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 489 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.0%
+ -> Coeficient OPRIRE generat de AI:     100.0%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 490 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 491 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 0.4%
+ -> Coeficient OPRIRE generat de AI:     99.6%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 492 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 493 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 494 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.5%
+ -> Coeficient OPRIRE generat de AI:     0.5%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 495 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 99.8%
+ -> Coeficient OPRIRE generat de AI:     0.2%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 496 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 497 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 498 (Răspunsul corect din trafic era: STOP (Frânează)):
+ -> Coeficient ACCELERARE generat de AI: 1.1%
+ -> Coeficient OPRIRE generat de AI:     98.9%
+ -> Decizie Model: AI-ul alege să OPREASCĂ.
+
+Scenariul 499 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.
+
+Scenariul 500 (Răspunsul corect din trafic era: GO (Accelerează)):
+ -> Coeficient ACCELERARE generat de AI: 100.0%
+ -> Coeficient OPRIRE generat de AI:     0.0%
+ -> Decizie Model: AI-ul alege să MEARGĂ.

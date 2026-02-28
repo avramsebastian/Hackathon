@@ -1,5 +1,7 @@
 pygame
 numpy
+pandas
+scikit-learn
 
 torch
 torchvision
