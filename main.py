@@ -40,12 +40,17 @@ def main() -> None:
         except ValueError:
             random_seed = None
 
+    priority_axis = os.getenv("SIM_PRIORITY_AXIS", "EW").upper()
+    if priority_axis not in ("EW", "NS"):
+        priority_axis = "EW"
+
     bridge = SimBridge(
         tick_rate_hz=10.0,
         drop_rate=0.0,
         latency_ms=0,
         vehicle_count=vehicle_count,
         random_seed=random_seed,
+        priority_axis=priority_axis,
     )
     bridge.start()
 

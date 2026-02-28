@@ -16,29 +16,14 @@ import random
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-
-# Lane-centre offset in world metres.
-LANE_OFFSET_M = 7.0
-
-# How far past the centre a car must travel before we consider it "through".
-_PASS_THRESHOLD_M = 10.0
-
-# Deceleration once a car is past (applied to km/h value per second).
-_DECEL_KMH_PER_S = 60.0
-_MAX_ACCEL_KMH_PER_S = 18.0
-_MAX_BRAKE_KMH_PER_S = 90.0
-_CAR_COLLISION_RADIUS_M = 2.6
-_CAR_PAIR_SAFE_DIST_M = _CAR_COLLISION_RADIUS_M * 2.0
-_ML_STOP_SOFT_RADIUS_M = 30.0
-_ML_STOP_HARD_RADIUS_M = 14.0
-_ML_STOP_SOFT_SPEED_KMH = 24.0
+from sim.traffic_policy import (
+    SafetyPolicy,
+    danger_score,
+    pair_safe_distance_m,
+)
 
 _ML_DIRECTIONS: Tuple[str, ...] = ("FORWARD", "LEFT", "RIGHT")
 _APPROACHES: Tuple[str, ...] = ("W", "N", "E", "S")
-_SPAWN_MIN_RADIUS_M = 70.0
-_SPAWN_MAX_RADIUS_M = 140.0
-_SPAWN_MIN_GAP_M = 18.0
-_SPAWN_MAX_ATTEMPTS = 300
 
 
 @dataclass
@@ -51,7 +36,10 @@ class Car:
     speed: float            # km/h
     ml_direction: str       # FORWARD | LEFT | RIGHT  (for ML model)
     approach: str           # W | N | E | S            (which side car enters from)
+    role: str = "civilian"
     cruise_speed: float = 0.0
+    speed_limit_kmh: float = 42.0
+    wait_s: float = 0.0
     vx: float = 0.0        # unit velocity component  (+1 / -1 / 0)
     vy: float = 0.0
     passed: bool = field(default=False, repr=False)
@@ -70,7 +58,7 @@ class Car:
         self.y += self.vy * speed_mps * dt
 
     # ── helpers ───────────────────────────────────────────────────────────
-    def has_passed(self, threshold: float = _PASS_THRESHOLD_M) -> bool:
+    def has_passed(self, threshold: float = 10.0) -> bool:
         """True once the car is *threshold* metres past the origin."""
         if self.vx > 0 and self.x > threshold:
             return True
@@ -90,6 +78,7 @@ class Car:
             "y": self.y,
             "speed": self.speed,
             "direction": self.ml_direction,
+            "role": self.role,
         }
 
     def ml_payload(self, sign: str, others: Sequence["Car"]) -> Dict[str, Any]:
@@ -126,13 +115,24 @@ class World:
     After passing the centre, they decelerate and eventually stop.
     """
 
-    def __init__(self, num_cars: int = 6, seed: Optional[int] = None) -> None:
-        self.current_sign: str = "YIELD"
+    def __init__(
+        self,
+        num_cars: int = 6,
+        seed: Optional[int] = None,
+        policy: Optional[SafetyPolicy] = None,
+        priority_axis: str = "EW",
+    ) -> None:
+        self.policy = policy or SafetyPolicy()
+        self.priority_axis = self._normalize_priority_axis(priority_axis)
+        self.signs_by_approach: Dict[str, str] = self._build_signs_by_approach(self.priority_axis)
+        self.current_sign: str = "YIELD"  # legacy fallback for old call-sites
         self.num_cars = max(1, int(num_cars))
         self._rng = random.Random(seed)
         self.cars: List[Car] = []
         self.safety_interventions: int = 0
         self.collision_resolutions: int = 0
+        self.green_approach: str = "W"
+        self._green_ttl_s: float = 0.0
         self._init_cars()
 
     # ── initialisation / reset ────────────────────────────────────────────
@@ -143,6 +143,8 @@ class World:
             self.cars.append(self._make_random_car(idx))
         self.safety_interventions = 0
         self.collision_resolutions = 0
+        self.green_approach = "W"
+        self._green_ttl_s = 0.0
         self._finished = False
 
     def reset(self) -> None:
@@ -156,6 +158,15 @@ class World:
 
     def all_cars(self) -> List[Car]:
         return list(self.cars)
+
+    def get_signs(self) -> Dict[str, str]:
+        return dict(self.signs_by_approach)
+
+    def sign_for_approach(self, approach: str) -> str:
+        return self.signs_by_approach.get(str(approach).upper(), "NO_SIGN")
+
+    def sign_for_car(self, car: Car) -> str:
+        return self.sign_for_approach(car.approach)
 
     # ── physics tick ──────────────────────────────────────────────────────
 
@@ -171,6 +182,7 @@ class World:
         prevent overlaps in the simulation.
         """
         decisions = decisions or {}
+        self._update_virtual_signal(dt)
 
         targets = self._build_target_speeds(decisions)
         interventions = self._apply_collision_guard(targets, dt)
@@ -180,7 +192,7 @@ class World:
 
         for car in self.cars:
             car.move(dt)
-            if not car.passed and car.has_passed():
+            if not car.passed and car.has_passed(self.policy.pass_threshold_m):
                 car.passed = True
 
         self.collision_resolutions += self._resolve_overlaps()
@@ -190,7 +202,7 @@ class World:
             for car in self.cars:
                 if car.stopped:
                     continue
-                car.speed = max(0.0, car.speed - _DECEL_KMH_PER_S * dt)
+                car.speed = max(0.0, car.speed - self.policy.coast_decel_kmh_s * dt)
                 if car.speed < 0.5:
                     car.speed = 0.0
                     car.stopped = True
@@ -214,7 +226,7 @@ class World:
         ego = self.cars[0]
         return {
             "my_car": ego.as_dict(),
-            "sign": self.current_sign,
+            "sign": self.sign_for_car(ego),
             "traffic": [car.as_dict() for car in self.cars[1:]],
         }
 
@@ -226,12 +238,20 @@ class World:
         distance from already spawned cars.
         """
         approach = self._rng.choice(_APPROACHES)
-        speed = self._rng.uniform(24.0, 45.0)
+        speed = self._rng.uniform(24.0, self.policy.speed_limit_kmh + 8.0)
         ml_direction = self._rng.choice(_ML_DIRECTIONS)
+        role = self._rng.choices(
+            ("civilian", "ambulance", "police"),
+            weights=(0.94, 0.03, 0.03),
+            k=1,
+        )[0]
+
+        if role in ("ambulance", "police"):
+            speed *= 1.1
 
         pos: Optional[Tuple[float, float, float, float]] = None
-        for _ in range(_SPAWN_MAX_ATTEMPTS):
-            distance = self._rng.uniform(_SPAWN_MIN_RADIUS_M, _SPAWN_MAX_RADIUS_M)
+        for _ in range(self.policy.spawn_max_attempts):
+            distance = self._rng.uniform(self.policy.spawn_min_radius_m, self.policy.spawn_max_radius_m)
             candidate = self._spawn_position(approach, distance)
             if self._spawn_is_clear(candidate[0], candidate[1]):
                 pos = candidate
@@ -243,7 +263,7 @@ class World:
         if pos is None:
             # Deterministic fallback: radial spread by index.
             fallback_approach = _APPROACHES[idx % len(_APPROACHES)]
-            distance = _SPAWN_MIN_RADIUS_M + idx * 10.0
+            distance = self.policy.spawn_min_radius_m + idx * 10.0
             pos = self._spawn_position(fallback_approach, distance)
             approach = fallback_approach
 
@@ -255,7 +275,9 @@ class World:
             speed=speed,
             ml_direction=ml_direction,
             approach=approach,
+            role=role,
             cruise_speed=speed,
+            speed_limit_kmh=self.policy.speed_limit_kmh,
             vx=vx,
             vy=vy,
         )
@@ -264,7 +286,7 @@ class World:
         """
         Return spawn (x, y) and heading vector (vx, vy) for one approach arm.
         """
-        L = LANE_OFFSET_M
+        L = self.policy.lane_offset_m
         arm = approach.upper()
         if arm == "W":
             return (-distance, -L, 1.0, 0.0)   # west -> east
@@ -276,7 +298,7 @@ class World:
 
     def _spawn_is_clear(self, x: float, y: float) -> bool:
         for car in self.cars:
-            if math.hypot(car.x - x, car.y - y) < _SPAWN_MIN_GAP_M:
+            if math.hypot(car.x - x, car.y - y) < self.policy.spawn_min_gap_m:
                 return False
         return True
 
@@ -286,7 +308,14 @@ class World:
         targets: Dict[str, float] = {}
         for car in self.cars:
             decision = decisions.get(car.id, {}).get("decision", "none")
-            targets[car.id] = self._target_speed_from_decision(car, decision)
+            target = self._target_speed_from_decision(car, decision)
+            if self._must_yield_to_signal(car):
+                dist = math.hypot(car.x, car.y)
+                if dist <= self.policy.red_hard_radius_m:
+                    target = 0.0
+                else:
+                    target = min(target, self.policy.red_soft_speed_kmh)
+            targets[car.id] = target
         return targets
 
     def _target_speed_from_decision(self, car: Car, decision: str) -> float:
@@ -297,21 +326,26 @@ class World:
             return car.cruise_speed
 
         dist_center = math.hypot(car.x, car.y)
-        if dist_center <= _ML_STOP_HARD_RADIUS_M:
-            return 0.0
-        if dist_center <= _ML_STOP_SOFT_RADIUS_M:
-            return min(car.cruise_speed, _ML_STOP_SOFT_SPEED_KMH)
+        if dist_center <= self.policy.ml_stop_hard_radius_m:
+            return min(car.cruise_speed, self.policy.ml_stop_soft_speed_kmh)
+        if dist_center <= self.policy.ml_stop_soft_radius_m:
+            return min(car.cruise_speed, self.policy.ml_stop_soft_speed_kmh)
         return car.cruise_speed
 
     def _apply_speed_targets(self, targets: Dict[str, float], dt: float) -> None:
         for car in self.cars:
             target = max(0.0, float(targets.get(car.id, car.cruise_speed)))
             if car.speed > target:
-                car.speed = max(target, car.speed - _MAX_BRAKE_KMH_PER_S * dt)
+                car.speed = max(target, car.speed - self.policy.max_brake_kmh_s * dt)
             elif car.speed < target:
-                car.speed = min(target, car.speed + _MAX_ACCEL_KMH_PER_S * dt)
+                car.speed = min(target, car.speed + self.policy.max_accel_kmh_s * dt)
             if car.speed < 0.5:
                 car.speed = 0.0
+
+            if car.speed < 1.0:
+                car.wait_s += dt
+            else:
+                car.wait_s = max(0.0, car.wait_s - 0.25 * dt)
 
     def _apply_collision_guard(self, targets: Dict[str, float], dt: float) -> int:
         interventions = 0
@@ -327,9 +361,20 @@ class World:
                     b = self.cars[j]
                     if not self._pair_needs_guard(a, b, targets, dt):
                         continue
+
+                    safe_dist = pair_safe_distance_m(a, b, self.policy)
+                    now_dist = math.hypot(a.x - b.x, a.y - b.y)
                     yielder = self._pick_yielder(a, b)
-                    if targets.get(yielder.id, 0.0) > 0.0:
-                        targets[yielder.id] = 0.0
+                    current = targets.get(yielder.id, yielder.cruise_speed)
+
+                    # Far conflicts slow down; only close conflicts force a full stop.
+                    if now_dist <= safe_dist * 0.78:
+                        new_target = 0.0
+                    else:
+                        new_target = min(current, self.policy.ml_stop_soft_speed_kmh)
+
+                    if new_target < current:
+                        targets[yielder.id] = new_target
                         interventions += 1
         return interventions
 
@@ -340,14 +385,16 @@ class World:
         targets: Dict[str, float],
         dt: float,
     ) -> bool:
+        safe_dist = pair_safe_distance_m(a, b, self.policy)
         now = math.hypot(a.x - b.x, a.y - b.y)
-        if now <= _CAR_PAIR_SAFE_DIST_M:
+        if now <= safe_dist:
             return True
 
-        ax, ay = self._project(a, targets.get(a.id, a.speed), dt)
-        bx, by = self._project(b, targets.get(b.id, b.speed), dt)
+        horizon = max(dt, self.policy.horizon_s)
+        ax, ay = self._project(a, targets.get(a.id, a.speed), horizon)
+        bx, by = self._project(b, targets.get(b.id, b.speed), horizon)
         nxt = math.hypot(ax - bx, ay - by)
-        return nxt <= _CAR_PAIR_SAFE_DIST_M
+        return nxt <= safe_dist
 
     @staticmethod
     def _project(car: Car, speed_kmh: float, dt: float) -> Tuple[float, float]:
@@ -367,7 +414,13 @@ class World:
                 a_ahead = (a.y - b.y) * a.vy > 0
                 return b if a_ahead else a
 
-        # Intersection guard: car farther from centre yields.
+        # Priority scheduler: lower-priority car yields.
+        pa = danger_score(a, self.policy)
+        pb = danger_score(b, self.policy)
+        if abs(pa - pb) > 0.1:
+            return a if pa < pb else b
+
+        # Fallback intersection guard: farther from centre yields.
         da = math.hypot(a.x, a.y)
         db = math.hypot(b.x, b.y)
         if abs(da - db) > 0.1:
@@ -375,6 +428,73 @@ class World:
 
         # Stable tie-breaker.
         return a if a.id > b.id else b
+
+    def _must_yield_to_signal(self, car: Car) -> bool:
+        if car.passed:
+            return False
+        if self._is_emergency(car):
+            return False
+        dist = math.hypot(car.x, car.y)
+        if dist > self.policy.signal_control_radius_m:
+            return False
+        return car.approach != self.green_approach
+
+    def _is_emergency(self, car: Car) -> bool:
+        return car.role in ("ambulance", "police", "fire")
+
+    def _update_virtual_signal(self, dt: float) -> None:
+        self._green_ttl_s = max(0.0, self._green_ttl_s - dt)
+        approach_scores: Dict[str, float] = {a: 0.0 for a in _APPROACHES}
+
+        for car in self.cars:
+            if car.passed:
+                continue
+            dist = math.hypot(car.x, car.y)
+            if dist > self.policy.signal_control_radius_m:
+                continue
+            score = danger_score(car, self.policy)
+            if self._is_emergency(car):
+                score += 3.0
+            approach_scores[car.approach] += score
+
+        best_approach = max(approach_scores, key=approach_scores.get)
+        best_score = approach_scores[best_approach]
+        current_score = approach_scores.get(self.green_approach, 0.0)
+
+        should_switch = (
+            self._green_ttl_s <= 0.0
+            or (
+                best_approach != self.green_approach
+                and best_score > current_score + self.policy.signal_switch_margin
+            )
+        )
+        if should_switch and best_score > 0.0:
+            self.green_approach = best_approach
+            self._green_ttl_s = self.policy.signal_window_s
+
+    @staticmethod
+    def _normalize_priority_axis(priority_axis: str) -> str:
+        axis = str(priority_axis).upper()
+        if axis in ("NS", "SN"):
+            return "NS"
+        return "EW"
+
+    @staticmethod
+    def _build_signs_by_approach(priority_axis: str) -> Dict[str, str]:
+        axis = World._normalize_priority_axis(priority_axis)
+        if axis == "NS":
+            return {
+                "N": "PRIORITY",
+                "S": "PRIORITY",
+                "E": "STOP",
+                "W": "YIELD",
+            }
+        return {
+            "E": "PRIORITY",
+            "W": "PRIORITY",
+            "N": "STOP",
+            "S": "YIELD",
+        }
 
     def _resolve_overlaps(self) -> int:
         """
@@ -391,7 +511,8 @@ class World:
                     dx = a.x - b.x
                     dy = a.y - b.y
                     dist = math.hypot(dx, dy)
-                    if dist >= _CAR_PAIR_SAFE_DIST_M:
+                    safe_dist = pair_safe_distance_m(a, b, self.policy)
+                    if dist >= safe_dist:
                         continue
 
                     count += 1
@@ -401,7 +522,7 @@ class World:
                         b.x += 0.5
                         b.y += 0.5
                     else:
-                        overlap = (_CAR_PAIR_SAFE_DIST_M - dist) / 2.0
+                        overlap = (safe_dist - dist) / 2.0
                         ux, uy = dx / dist, dy / dist
                         a.x += ux * overlap
                         a.y += uy * overlap

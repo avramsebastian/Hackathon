@@ -268,7 +268,7 @@ def _draw_single_sign(
     pygame.draw.line(screen, COLOR_SIGN_POLE, (sx, sy), (sx, sy + pole_h), pw)
 
     if name == "STOP":
-        _draw_octagon(screen, sx, sy, s, COLOR_STOP_RED)
+        _draw_hexagon(screen, sx, sy, s, COLOR_STOP_RED)
         # tiny white "STOP" text
         if cam.zoom >= 2.5:
             font = pygame.font.SysFont("arial,helvetica", max(8, int(s * 0.6)))
@@ -285,12 +285,12 @@ def _draw_single_sign(
         pass  # no sign rendered
 
 
-def _draw_octagon(
+def _draw_hexagon(
     surface: pygame.Surface, cx: int, cy: int, r: int, color: Tuple[int, ...]
 ) -> None:
     pts = []
-    for i in range(8):
-        angle = math.radians(22.5 + i * 45)
+    for i in range(6):
+        angle = math.radians(30 + i * 60)
         pts.append((cx + int(r * math.cos(angle)), cy - int(r * math.sin(angle))))
     pygame.draw.polygon(surface, color, pts)
     pygame.draw.polygon(surface, (255, 255, 255), pts, max(1, r // 5))
@@ -305,8 +305,8 @@ def _draw_yield_triangle(
         (cx + r, cy - int(r * 0.7)),
         (cx, cy + int(r * 0.9)),
     ]
-    pygame.draw.polygon(surface, COLOR_YIELD_RED, pts)
-    pygame.draw.polygon(surface, COLOR_YIELD_WHITE, pts, max(1, r // 5))
+    pygame.draw.polygon(surface, COLOR_YIELD_WHITE, pts)
+    pygame.draw.polygon(surface, COLOR_YIELD_RED, pts, max(1, r // 4))
 
 
 def _draw_diamond(

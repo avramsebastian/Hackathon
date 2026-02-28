@@ -44,6 +44,7 @@ for _p in [
         sys.path.insert(0, _p)
 
 from sim.world import World, Car
+from sim.traffic_policy import danger_score
 from bus.v2x_bus import V2XBus
 from comunication.Inference import fa_inferenta_din_json
 
@@ -118,6 +119,7 @@ class SimBridge:
         model_path: Optional[str] = None,
         vehicle_count: int = 6,
         random_seed: Optional[int] = None,
+        priority_axis: str = "EW",
     ) -> None:
         self._tick_rate_hz = tick_rate_hz
         self._model_path = model_path or os.path.join(
@@ -126,7 +128,11 @@ class SimBridge:
         self._drop_rate = drop_rate
         self._latency_ms = latency_ms
 
-        self._world = World(num_cars=vehicle_count, seed=random_seed)
+        self._world = World(
+            num_cars=vehicle_count,
+            seed=random_seed,
+            priority_axis=priority_axis,
+        )
         self._bus = V2XBus(drop_rate=drop_rate, latency_ms=latency_ms)
 
         self._lock = threading.Lock()
@@ -211,9 +217,10 @@ class SimBridge:
 
     # ── helpers: build rich vehicle dict ──────────────────────────────────────
 
-    @staticmethod
     def _make_vehicle_dict(
-        car: Car, color: Tuple[int, int, int]
+        self,
+        car: Car,
+        color: Tuple[int, int, int],
     ) -> Dict[str, Any]:
         return {
             "id": car.id,
@@ -223,6 +230,8 @@ class SimBridge:
             "speed_unit": _SPEED_UNIT,
             "direction": _cardinal_direction(car),
             "approach": car.approach,
+            "role": car.role,
+            "priority_score": danger_score(car, self._world.policy),
             "color": color,
             "road_line": _road_line(car),
         }
@@ -234,7 +243,7 @@ class SimBridge:
         Run ML inference for one standalone vehicle entity.
         """
         raw = fa_inferenta_din_json(
-            ego_car.ml_payload(self._world.current_sign, others),
+            ego_car.ml_payload(self._world.sign_for_car(ego_car), others),
             model_path=self._model_path,
         )
         if raw.get("status") == "success":
@@ -292,7 +301,7 @@ class SimBridge:
                 topic="v2v.state",
                 sender=car.id,
                 payload=car.v2x_payload(
-                    sign=self._world.current_sign,
+                    sign=self._world.sign_for_car(car),
                     others=others_by_id[car.id],
                     decision=decisions.get(car.id, {"decision": "none"}),
                 ),
@@ -311,11 +320,12 @@ class SimBridge:
         ]
 
         # 6. Build intersection metadata (UI-compatible + extensible)
-        sign = self._world.current_sign
+        signs = self._world.get_signs()
         intersection_meta: Dict[str, Any] = {
-            "signs": {"N": sign, "S": sign, "E": sign, "W": sign},
+            "signs": signs,
             "lane_count": 2,
             "box_size": 100,
+            "green_approach": self._world.green_approach,
             "safety_interventions": self._world.safety_interventions,
             "collision_resolutions": self._world.collision_resolutions,
             "intersections": [
@@ -323,7 +333,7 @@ class SimBridge:
                     "id": "INT_000",
                     "center": [0.0, 0.0],
                     "box_size": 100,
-                    "signs": {"N": sign, "S": sign, "E": sign, "W": sign},
+                    "signs": signs,
                 }
             ],
         }

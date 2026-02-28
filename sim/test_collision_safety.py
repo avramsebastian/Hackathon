@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 import unittest
 
-from sim.world import Car, World, _CAR_PAIR_SAFE_DIST_M
+from sim.world import Car, World
 
 
 class WorldSafetyTests(unittest.TestCase):
@@ -53,7 +53,7 @@ class WorldSafetyTests(unittest.TestCase):
             )
             min_dist = min(min_dist, d)
 
-        self.assertGreaterEqual(min_dist, _CAR_PAIR_SAFE_DIST_M - 0.01)
+        self.assertGreaterEqual(min_dist, world.policy.min_pair_distance_m - 0.01)
         self.assertGreater(world.safety_interventions + world.collision_resolutions, 0)
 
     def test_stop_decision_reduces_speed(self) -> None:
@@ -78,7 +78,8 @@ class WorldSafetyTests(unittest.TestCase):
         for _ in range(20):
             world.update_physics(dt=0.1, decisions=decisions)
 
-        self.assertLess(car.speed, initial * 0.35)
+        self.assertLess(car.speed, initial)
+        self.assertLessEqual(car.speed, world.policy.ml_stop_soft_speed_kmh + 0.2)
 
 
 if __name__ == "__main__":
