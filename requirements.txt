@@ -1,0 +1,8 @@
+pygame
+numpy
+
+torch
+torchvision
+
+pydantic
+tqdm
