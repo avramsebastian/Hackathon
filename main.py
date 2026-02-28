@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 
-def main():
-    print("Hello world!")
+from logging_setup import setup_logging
+import logging
 
-if __name__ == "__main__": 
+def main():
+    setup_logging(logging.INFO)
+    log = logging.getLogger("main")
+    log.info("Hello world!")
+
+    # start bus, agents, pygame loop...
+
+if __name__ == "__main__":
     main()
