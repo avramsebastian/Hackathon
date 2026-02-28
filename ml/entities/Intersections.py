@@ -1,25 +1,21 @@
-import math
-from enum import Enum
-from dataclasses import dataclass
+from Car import Car
+from Sign import Sign
 from typing import List
 from Directions import Directions
-from Sign import Sign
-from Car import Car
 
-# 3. Clasa care procesează situația și o pregătește pentru Modelul de AI
-class IntersectionState:
+class Intersections:
     def __init__(self, initial_car: Car, other_cars: List[Car], sign: Sign, max_tracked_cars: int = 2):
         self.initial_car = initial_car
         self.other_cars = other_cars
         self.sign = sign
-        self.max_tracked_cars = max_tracked_cars # Câte alte mașini urmărim maxim
+        self.max_tracked_cars = max_tracked_cars
 
     def _one_hot_encode(self, index: int, length: int) -> List[float]:
         """Transformă un index într-un vector one-hot (ex: index 1 din 3 -> [0.0, 1.0, 0.0])"""
         vector = [0.0] * length
         vector[index] = 1.0
         return vector
-
+    
     def get_feature_vector(self) -> List[float]:
         """Aplatizează toate datele într-un singur șir de numere pentru rețeaua neurală"""
         features = []
@@ -50,10 +46,7 @@ class IntersectionState:
             features.extend([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # x, y, speed + 3 dir
 
         return features
-
-# ==========================================
-# EXEMPLU DE UTILIZARE
-# ==========================================
+    
 if __name__ == "__main__":
     # Mașina ta se apropie de intersecție
     my_car = Car(x=0.0, y=-15.0, speed=10.0, direction=Directions.FORWARD)
@@ -69,7 +62,7 @@ if __name__ == "__main__":
     current_sign = Sign.YIELD
 
     # Creăm starea
-    state = IntersectionState(initial_car=my_car, other_cars=traffic, sign=current_sign, max_tracked_cars=2)
+    state = Intersections(initial_car=my_car, other_cars=traffic, sign=current_sign, max_tracked_cars=2)
 
     # Generăm datele pentru model
     model_input = state.get_feature_vector()
