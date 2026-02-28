@@ -1,451 +1,204 @@
-#!/usr/bin/env python3
-"""Vehicle sprite rendering, detection zones, animation, and state sync (mixin)."""
+"""
+ui/draw_vehicles.py
+===================
+Renders top-down car sprites, headlights, route lines, and
+awareness-zone indicators.  Everything is heading-aware and colour-coded.
+"""
 
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pygame
 
-from .types import ColorRGB, ColorRGBA, VehicleRenderState
+from ui.constants import (
+    CAR_LENGTH, CAR_WIDTH, HEADLIGHT_R, HEADLIGHT_INSET,
+    AWARENESS_DIVISOR, COLOR_LANE_WHITE,
+)
+from ui.types import Camera
+from ui.helpers import (
+    direction_to_heading,
+    should_slow_down,
+    draw_alpha_circle,
+)
 
 
-class VehicleRenderer:
-    """Mixin that draws vehicles, detection zones, conflict highlights, and handles animation."""
+# ══════════════════════════════════════════════════════════════════════════════
+#  PUBLIC  draw_all_vehicles()
+# ══════════════════════════════════════════════════════════════════════════════
 
-    # ------------------------------------------------------------------ #
-    #  Public draw methods                                                 #
-    # ------------------------------------------------------------------ #
+def draw_all_vehicles(
+    screen: pygame.Surface,
+    camera: Camera,
+    vehicles: List[Dict[str, Any]],
+    decisions: Dict[str, Dict[str, Any]],
+    frame: int = 0,
+) -> None:
+    """Render every vehicle: route → awareness zone → car body + headlights."""
+    # 1. Route lines (behind everything)
+    for v in vehicles:
+        _draw_route_line(screen, camera, v)
 
-    def draw_vehicle(self, surface: pygame.Surface, vehicle: Any) -> None:
-        vehicle_id = self._vehicle_id(vehicle)
-        state = self.vehicle_states.get(vehicle_id)
-        if state is None:
-            return
+    # 2. Awareness zones
+    for v in vehicles:
+        dec = decisions.get(v["id"], {})
+        ml = dec.get("decision", "none")
+        if should_slow_down(v, ml):
+            _draw_awareness_ring(screen, camera, v, frame)
 
-        w, h = 26, 13
-        sprite = pygame.Surface((w, h), pygame.SRCALPHA)
+    # 3. Car body + headlights (on top)
+    for v in vehicles:
+        _draw_vehicle(screen, camera, v)
 
-        # Body
-        body = pygame.Rect(0, 0, w, h)
-        pygame.draw.rect(sprite, state.color, body, border_radius=3)
 
-        # Windshield
-        ws_rect = pygame.Rect(w - 10, 2, 7, h - 4)
-        r, g, b = state.color
-        glass = (max(0, r - 60), max(0, g - 60), max(0, b - 60), 180)
-        pygame.draw.rect(sprite, glass, ws_rect, border_radius=2)
+# ══════════════════════════════════════════════════════════════════════════════
+#  PRIVATE
+# ══════════════════════════════════════════════════════════════════════════════
 
-        # Headlights
-        hl_color = (255, 248, 200)
-        pygame.draw.circle(sprite, hl_color, (w - 2, 3), 2)
-        pygame.draw.circle(sprite, hl_color, (w - 2, h - 3), 2)
+# ── Route line ────────────────────────────────────────────────────────────────
 
-        # Taillights
-        tl_color = (200, 40, 40)
-        pygame.draw.circle(sprite, tl_color, (2, 3), 2)
-        pygame.draw.circle(sprite, tl_color, (2, h - 3), 2)
+def _draw_route_line(
+    screen: pygame.Surface, cam: Camera, vehicle: Dict[str, Any]
+) -> None:
+    """Draw the vehicle's road_line as a faded polyline in its colour."""
+    road_line = vehicle.get("road_line")
+    if not road_line or len(road_line) < 2:
+        return
+    color = _get_color(vehicle)
+    faded = (*color, 70)  # RGBA
 
-        # Border
-        pygame.draw.rect(sprite, (235, 235, 235), body, width=1, border_radius=3)
+    pts = [cam.world_to_screen(p[0], p[1]) for p in road_line]
+    ipts = [(int(p[0]), int(p[1])) for p in pts]
 
-        direction = state.travel_vec if state.travel_vec.length_squared() > 0 else pygame.Vector2(1, 0)
-        angle = -math.degrees(math.atan2(direction.y, direction.x))
-        rotated = pygame.transform.rotate(sprite, angle)
-        dest = rotated.get_rect(center=(int(state.render_pos.x), int(state.render_pos.y)))
-        surface.blit(rotated, dest)
+    # Draw on alpha surface
+    if len(ipts) < 2:
+        return
+    # Compute bounding box
+    xs = [p[0] for p in ipts]
+    ys = [p[1] for p in ipts]
+    min_x, max_x = min(xs) - 4, max(xs) + 4
+    min_y, max_y = min(ys) - 4, max(ys) + 4
+    w = max(1, max_x - min_x)
+    h = max(1, max_y - min_y)
 
-    def draw_road_line(self, surface: pygame.Surface, vehicle: Any) -> None:
-        vehicle_id = self._vehicle_id(vehicle)
-        state = self.vehicle_states.get(vehicle_id)
-        if state is None:
-            return
-        if len(state.path_points) < 2:
-            return
+    tmp = pygame.Surface((w, h), pygame.SRCALPHA)
+    local_pts = [(p[0] - min_x, p[1] - min_y) for p in ipts]
+    thickness = max(2, int(cam.zoom * 0.8))
+    pygame.draw.lines(tmp, faded, False, local_pts, thickness)
+    screen.blit(tmp, (min_x, min_y))
 
-        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        color = (*state.color, self.ROAD_LINE_ALPHA)
-        points = [(int(p.x), int(p.y)) for p in state.path_points]
-        pygame.draw.lines(overlay, color, False, points, 4)
-        surface.blit(overlay, (0, 0))
 
-    def draw_detection_zone(self, surface: pygame.Surface, vehicle: Any, ml_decision: Any) -> None:
-        vehicle_id = self._vehicle_id(vehicle)
-        state = self.vehicle_states.get(vehicle_id)
-        if state is None:
-            return
+# ── Awareness ring ────────────────────────────────────────────────────────────
 
-        approach_vec = self._infer_approach_vector(vehicle, state.render_pos)
-        if state.approach_vec.length_squared() > 0:
-            approach_vec = state.approach_vec
-        circle_center = self.center + approach_vec * self.DETECTION_DISTANCE_PX
-        distance = state.render_pos.distance_to(circle_center)
-        state.in_detection = distance <= self.DETECTION_RADIUS_PX
+def _draw_awareness_ring(
+    screen: pygame.Surface, cam: Camera,
+    vehicle: Dict[str, Any], frame: int,
+) -> None:
+    """Pulsing coloured ring around a vehicle that should slow down."""
+    sx, sy = cam.world_to_screen(vehicle["x"], vehicle["y"])
+    pulse = 0.7 + 0.3 * math.sin(frame * 0.15)
+    base_r = int(max(6, CAR_LENGTH * cam.zoom * 0.8))
+    r = int(base_r * pulse)
+    alpha = int(120 * pulse)
+    color = _get_color(vehicle)
+    draw_alpha_circle(screen, (*color, alpha), (int(sx), int(sy)), r)
 
-        decision = self._normalize_decision(ml_decision)
-        if decision == "stop":
-            target = (*self.STOP_COLOR, self.ZONE_STOP_ALPHA)
-        elif state.in_detection and decision == "go":
-            target = (*self.GO_COLOR, self.ZONE_GO_ALPHA)
-        else:
-            target = (0, 0, 0, 0)
-        self._update_zone_transition(state, target)
 
-        if state.zone_current[3] > 0:
-            lane_end = circle_center
-            if decision == "stop":
-                # STOP should paint lane segment from current car position to the intersection.
-                to_vehicle = state.render_pos - self.center
-                if to_vehicle.length_squared() > 0 and to_vehicle.dot(approach_vec) > 0:
-                    lane_end = state.render_pos
-            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            pygame.draw.line(
-                overlay,
-                state.zone_current,
-                (int(self.center.x), int(self.center.y)),
-                (int(lane_end.x), int(lane_end.y)),
-                self.LANE_WIDTH + 8,
-            )
-            surface.blit(overlay, (0, 0))
+# ── Vehicle body ──────────────────────────────────────────────────────────────
 
-    def draw_conflict_highlight(self, surface: pygame.Surface, intersection: Any, tick: float) -> None:
-        alpha = self.CONFLICT_ALPHA_MIN + (
-            (math.sin(2 * math.pi * tick) + 1.0) * 0.5
-            * (self.CONFLICT_ALPHA_MAX - self.CONFLICT_ALPHA_MIN)
-        )
+def _draw_vehicle(
+    screen: pygame.Surface, cam: Camera, vehicle: Dict[str, Any]
+) -> None:
+    """
+    Draw a top-down car polygon rotated by heading, with headlights.
+    The base shape points EAST (heading 0°).
+    """
+    heading = direction_to_heading(vehicle.get("direction", "EAST"))
+    color = _get_color(vehicle)
+    sx, sy = cam.world_to_screen(vehicle["x"], vehicle["y"])
 
-        glow_rect = self._intersection_rect(intersection).inflate(28, 28)
-        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        pygame.draw.rect(
-            overlay,
-            (*self.CONFLICT_COLOR, int(alpha)),
-            glow_rect,
-            border_radius=10,
-        )
-        surface.blit(overlay, (0, 0))
+    # Pixel sizes
+    cl = max(6, CAR_LENGTH * cam.zoom)
+    cw = max(4, CAR_WIDTH * cam.zoom)
+    hl_r = max(1, int(HEADLIGHT_R * cam.zoom))
+    hl_off = max(1, HEADLIGHT_INSET * cam.zoom)
 
-    # ------------------------------------------------------------------ #
-    #  Animation                                                           #
-    # ------------------------------------------------------------------ #
+    # Build car surface (pointing right = EAST)
+    surf_w = int(cl + 6)
+    surf_h = int(cw + 6)
+    car_surf = pygame.Surface((surf_w, surf_h), pygame.SRCALPHA)
+    cx, cy = surf_w // 2, surf_h // 2
 
-    def animate_vehicle(self, vehicle: Any, ml_decision: Any, delta_time: float) -> None:
-        vehicle_id = self._vehicle_id(vehicle)
-        state = self.vehicle_states.get(vehicle_id)
-        if state is None:
-            return
+    # --- Drop shadow ---
+    shadow_pts = _car_polygon(cx + 2, cy + 2, cl, cw)
+    pygame.draw.polygon(car_surf, (0, 0, 0, 40), shadow_pts)
 
-        decision = self._normalize_decision(ml_decision)
-        target_scale = 0.35 if decision == "stop" else 1.0
-        blend = min(1.0, delta_time * 6.0)
-        state.speed_scale_current += (target_scale - state.speed_scale_current) * blend
+    # --- Body ---
+    body_pts = _car_polygon(cx, cy, cl, cw)
+    pygame.draw.polygon(car_surf, color, body_pts)
+    # Outline
+    pygame.draw.polygon(car_surf, _darken(color, 40), body_pts, max(1, int(cam.zoom * 0.3)))
 
-        speed_px = self._speed_mps(vehicle) * self.PIXELS_PER_METER * state.speed_scale_current
-        if len(state.path_points) >= 2 and state.path_index < len(state.path_points):
-            target = state.path_points[state.path_index]
-            to_target = target - state.render_pos
-            distance = to_target.length()
-            step = max(0.0, speed_px * delta_time)
-            if distance > 0 and step > 0:
-                if distance <= step:
-                    state.render_pos = target
-                    if state.path_index < len(state.path_points) - 1:
-                        state.path_index += 1
-                        next_vec = state.path_points[state.path_index] - state.render_pos
-                        if next_vec.length_squared() > 0:
-                            state.travel_vec = next_vec.normalize()
-                else:
-                    movement = to_target.normalize() * step
-                    state.render_pos += movement
-                    state.travel_vec = movement.normalize()
-        else:
-            direction = self._infer_travel_vector(vehicle, state.render_pos)
-            state.render_pos += direction * speed_px * delta_time
-            state.travel_vec = direction
+    # --- Windshield (slightly darker strip near front) ---
+    ws_x = cx + int(cl * 0.2)
+    ws_w = max(2, int(cl * 0.12))
+    ws_h = max(2, int(cw * 0.6))
+    pygame.draw.rect(car_surf, _darken(color, 60), (ws_x, cy - ws_h // 2, ws_w, ws_h))
 
-        reported_position = self._extract_vehicle_position(vehicle)
-        if reported_position is not None:
-            state.render_pos = state.render_pos.lerp(reported_position, 0.20)
+    # --- Headlights ---
+    hl_y_top = cy - int(cw * 0.35)
+    hl_y_bot = cy + int(cw * 0.35)
+    hl_x = cx + int(cl * 0.42)
+    pygame.draw.circle(car_surf, (255, 255, 200), (hl_x, hl_y_top), hl_r)
+    pygame.draw.circle(car_surf, (255, 255, 200), (hl_x, hl_y_bot), hl_r)
 
-    # ------------------------------------------------------------------ #
-    #  Vehicle state management                                            #
-    # ------------------------------------------------------------------ #
+    # --- Tail-lights ---
+    tl_x = cx - int(cl * 0.42)
+    pygame.draw.circle(car_surf, (200, 30, 30), (tl_x, hl_y_top), max(1, hl_r - 1))
+    pygame.draw.circle(car_surf, (200, 30, 30), (tl_x, hl_y_bot), max(1, hl_r - 1))
 
-    def _sync_vehicle_states(self, vehicles: Sequence[Any]) -> None:
-        active_ids = set()
-        for index, vehicle in enumerate(vehicles):
-            vehicle_id = self._vehicle_id(vehicle)
-            active_ids.add(vehicle_id)
+    # Rotate & blit
+    rotated = pygame.transform.rotate(car_surf, heading)
+    rect = rotated.get_rect(center=(int(sx), int(sy)))
+    screen.blit(rotated, rect)
 
-            color = self._vehicle_color(vehicle, index)
-            start_pos = self._extract_vehicle_position(vehicle)
-            if start_pos is None:
-                start_pos = self._fallback_start_position(vehicle, index)
+    # --- ID label above car ---
+    if cam.zoom >= 2.0:
+        font = pygame.font.SysFont("arial,helvetica", max(9, int(cam.zoom * 3.5)))
+        lbl = font.render(vehicle["id"], True, (255, 255, 255))
+        lbl_bg = pygame.Surface((lbl.get_width() + 4, lbl.get_height() + 2), pygame.SRCALPHA)
+        lbl_bg.fill((0, 0, 0, 100))
+        screen.blit(lbl_bg, (int(sx) - lbl_bg.get_width() // 2, int(sy) - int(cw) - 14))
+        screen.blit(lbl, (int(sx) - lbl.get_width() // 2, int(sy) - int(cw) - 13))
 
-            if vehicle_id not in self.vehicle_states:
-                state = VehicleRenderState(
-                    color=color,
-                    render_pos=start_pos,
-                    approach_vec=self._infer_approach_vector(vehicle, start_pos),
-                )
-                self.vehicle_states[vehicle_id] = state
-            else:
-                state = self.vehicle_states[vehicle_id]
-                state.color = color
-                if state.render_pos.length_squared() == 0:
-                    state.render_pos = start_pos
-                if state.approach_vec.length_squared() == 0:
-                    state.approach_vec = self._infer_approach_vector(vehicle, state.render_pos)
 
-            state.path_points = self._extract_path_points(vehicle, state.approach_vec)
-            if not state.path_points:
-                state.path_points = [state.render_pos, self.center.copy()]
-            else:
-                entry_vec = state.path_points[0] - self.center
-                if entry_vec.length_squared() > 0:
-                    state.approach_vec = entry_vec.normalize()
-            state.path_index = min(state.path_index, len(state.path_points) - 1)
+def _car_polygon(cx: int, cy: int, length: float, width: float) -> List[Tuple[int, int]]:
+    """
+    Six-point polygon for a simplified top-down car shape pointing right.
+    Slightly tapered at the front, squared at the back.
+    """
+    hl = length / 2
+    hw = width / 2
+    taper = width * 0.15
+    return [
+        (int(cx - hl), int(cy - hw)),          # rear-left
+        (int(cx + hl * 0.6), int(cy - hw)),    # front-left shoulder
+        (int(cx + hl), int(cy - hw + taper)),   # front-left taper
+        (int(cx + hl), int(cy + hw - taper)),   # front-right taper
+        (int(cx + hl * 0.6), int(cy + hw)),    # front-right shoulder
+        (int(cx - hl), int(cy + hw)),          # rear-right
+    ]
 
-        stale_ids = [vid for vid in self.vehicle_states if vid not in active_ids]
-        for vid in stale_ids:
-            del self.vehicle_states[vid]
 
-    # ------------------------------------------------------------------ #
-    #  Path / position helpers                                             #
-    # ------------------------------------------------------------------ #
+# ── Colour helpers ────────────────────────────────────────────────────────────
 
-    def _extract_path_points(
-        self, vehicle: Any, approach_vec: pygame.Vector2
-    ) -> List[pygame.Vector2]:
-        raw_path = self._get(vehicle, "road_line", "path", "desired_path")
-        path_points: List[pygame.Vector2] = []
-        if isinstance(raw_path, Sequence) and not isinstance(raw_path, (str, bytes)):
-            for point in raw_path:
-                parsed = self._point_to_screen(point)
-                if parsed is not None:
-                    path_points.append(parsed)
-        if len(path_points) >= 2:
-            return path_points
+def _get_color(vehicle: Dict[str, Any]) -> Tuple[int, int, int]:
+    c = vehicle.get("color", (180, 180, 180))
+    if isinstance(c, (list, tuple)) and len(c) >= 3:
+        return (c[0], c[1], c[2])
+    return (180, 180, 180)
 
-        approach = (
-            approach_vec
-            if approach_vec.length_squared() > 0
-            else self._infer_approach_from_field(vehicle)
-        )
-        if approach.length_squared() == 0:
-            approach = pygame.Vector2(0, -1)
-        long_span = max(self.width, self.height) * 0.65
-        start = self.center + approach * long_span
 
-        # Generate turn paths for LEFT / RIGHT directions
-        direction = self._get(vehicle, "direction")
-        if isinstance(direction, str):
-            rel_dir = direction.strip().upper()
-            heading = -approach.normalize() if approach.length_squared() > 0 else pygame.Vector2(1, 0)
-            if rel_dir == "LEFT":
-                exit_vec = pygame.Vector2(heading.y, -heading.x)
-                end = self.center + exit_vec * long_span
-                return [start, self.center.copy(), end]
-            elif rel_dir == "RIGHT":
-                exit_vec = pygame.Vector2(-heading.y, heading.x)
-                end = self.center + exit_vec * long_span
-                return [start, self.center.copy(), end]
-
-        # FORWARD or default: straight through
-        end = self.center - approach * long_span
-        return [start, self.center.copy(), end]
-
-    def _fallback_start_position(self, vehicle: Any, index: int) -> pygame.Vector2:
-        approach = self._infer_approach_from_field(vehicle)
-        if approach.length_squared() == 0:
-            cycle = [
-                pygame.Vector2(0, -1),
-                pygame.Vector2(1, 0),
-                pygame.Vector2(0, 1),
-                pygame.Vector2(-1, 0),
-            ]
-            approach = cycle[index % len(cycle)]
-        return self.center + approach * (self.DETECTION_DISTANCE_PX + 90)
-
-    def _extract_vehicle_position(self, vehicle: Any) -> Optional[pygame.Vector2]:
-        position = self._get(vehicle, "position", "pos")
-        if position is not None:
-            point = self._point_to_screen(position)
-            if point is not None:
-                return point
-
-        x = self._get(vehicle, "x")
-        y = self._get(vehicle, "y")
-        if x is None or y is None:
-            return None
-        try:
-            return self._to_screen_point(float(x), float(y))
-        except (TypeError, ValueError):
-            return None
-
-    def _point_to_screen(self, point: Any) -> Optional[pygame.Vector2]:
-        if isinstance(point, Mapping):
-            x = point.get("x")
-            y = point.get("y")
-            if x is None or y is None:
-                return None
-            try:
-                return self._to_screen_point(float(x), float(y))
-            except (TypeError, ValueError):
-                return None
-        if (
-            isinstance(point, Sequence)
-            and not isinstance(point, (str, bytes))
-            and len(point) >= 2
-        ):
-            try:
-                return self._to_screen_point(float(point[0]), float(point[1]))
-            except (TypeError, ValueError):
-                return None
-        return None
-
-    def _to_screen_point(self, x: float, y: float) -> pygame.Vector2:
-        if max(abs(x), abs(y)) <= 200.0:
-            return pygame.Vector2(
-                self.center.x + x * self.PIXELS_PER_METER,
-                self.center.y - y * self.PIXELS_PER_METER,
-            )
-        if -1.0 <= x <= 1.0 and -1.0 <= y <= 1.0:
-            return pygame.Vector2(
-                self.center.x + x * self.width * 0.45,
-                self.center.y - y * self.height * 0.45,
-            )
-        return pygame.Vector2(x, y)
-
-    # ------------------------------------------------------------------ #
-    #  Speed helpers                                                       #
-    # ------------------------------------------------------------------ #
-
-    def _speed_mps(self, vehicle: Any) -> float:
-        raw = self._as_float(self._get(vehicle, "speed", "velocity", default=0.0))
-        speed = abs(raw if raw is not None else 0.0)
-        unit = str(self._get(vehicle, "speed_unit", "unit", default="kmh")).strip().lower()
-        if unit in {"kmh", "kph", "km/h"}:
-            return speed / 3.6
-        if unit in {"mph"}:
-            return speed * 0.44704
-        if speed > 70:
-            return speed / 3.6
-        return speed
-
-    @staticmethod
-    def _speed_to_kmh(speed_mps: float) -> float:
-        return speed_mps * 3.6
-
-    # ------------------------------------------------------------------ #
-    #  Direction inference                                                 #
-    # ------------------------------------------------------------------ #
-
-    def _infer_travel_vector(self, vehicle: Any, render_pos: pygame.Vector2) -> pygame.Vector2:
-        heading = self._get(vehicle, "heading", "angle")
-        if isinstance(heading, (int, float)):
-            radians = math.radians(float(heading))
-            vec = pygame.Vector2(math.cos(radians), -math.sin(radians))
-            if vec.length_squared() > 0:
-                return vec.normalize()
-
-        direction = self._get(vehicle, "direction")
-        if isinstance(direction, str):
-            key = direction.strip().upper()
-
-            # Relative directions: FORWARD / LEFT / RIGHT
-            if key in {"FORWARD", "LEFT", "RIGHT"}:
-                approach = self._infer_approach_vector(vehicle, render_pos)
-                heading_vec = -approach
-                if heading_vec.length_squared() == 0:
-                    heading_vec = pygame.Vector2(1, 0)
-                heading_vec = heading_vec.normalize()
-                if key == "FORWARD":
-                    return heading_vec
-                elif key == "LEFT":
-                    # 90° left turn in screen coords (Y-down)
-                    return pygame.Vector2(heading_vec.y, -heading_vec.x)
-                else:  # RIGHT
-                    return pygame.Vector2(-heading_vec.y, heading_vec.x)
-
-            # Cardinal directions
-            if key in {"N", "NORTH", "SOUTHBOUND"}:
-                return pygame.Vector2(0, 1)
-            if key in {"S", "SOUTH", "NORTHBOUND"}:
-                return pygame.Vector2(0, -1)
-            if key in {"E", "EAST", "WESTBOUND"}:
-                return pygame.Vector2(-1, 0)
-            if key in {"W", "WEST", "EASTBOUND"}:
-                return pygame.Vector2(1, 0)
-
-        approach = self._infer_approach_vector(vehicle, render_pos)
-        return -approach
-
-    def _infer_approach_vector(self, vehicle: Any, render_pos: pygame.Vector2) -> pygame.Vector2:
-        field_vec = self._infer_approach_from_field(vehicle)
-        if field_vec.length_squared() > 0:
-            return field_vec
-
-        delta = render_pos - self.center
-        if abs(delta.x) >= abs(delta.y):
-            return pygame.Vector2(1, 0) if delta.x >= 0 else pygame.Vector2(-1, 0)
-        return pygame.Vector2(0, 1) if delta.y >= 0 else pygame.Vector2(0, -1)
-
-    def _infer_approach_from_field(self, vehicle: Any) -> pygame.Vector2:
-        approach = self._get(vehicle, "approach", "entry", "from_direction")
-        if not isinstance(approach, str):
-            return pygame.Vector2()
-        key = approach.strip().upper()
-        if key in {"N", "NORTH"}:
-            return pygame.Vector2(0, -1)
-        if key in {"S", "SOUTH"}:
-            return pygame.Vector2(0, 1)
-        if key in {"E", "EAST"}:
-            return pygame.Vector2(1, 0)
-        if key in {"W", "WEST"}:
-            return pygame.Vector2(-1, 0)
-        return pygame.Vector2()
-
-    # ------------------------------------------------------------------ #
-    #  Zone transition                                                     #
-    # ------------------------------------------------------------------ #
-
-    def _update_zone_transition(self, state: VehicleRenderState, target: ColorRGBA) -> None:
-        if target != state.zone_target:
-            state.zone_from = state.zone_current
-            state.zone_target = target
-            state.zone_frame = 0
-
-        if state.zone_frame >= self.ZONE_TRANSITION_FRAMES:
-            state.zone_current = state.zone_target
-            return
-
-        t = min(1.0, (state.zone_frame + 1) / float(self.ZONE_TRANSITION_FRAMES))
-        state.zone_current = self._lerp_color(state.zone_from, state.zone_target, t)
-        state.zone_frame += 1
-
-    @staticmethod
-    def _lerp_color(a: ColorRGBA, b: ColorRGBA, t: float) -> ColorRGBA:
-        return (
-            int(a[0] + (b[0] - a[0]) * t),
-            int(a[1] + (b[1] - a[1]) * t),
-            int(a[2] + (b[2] - a[2]) * t),
-            int(a[3] + (b[3] - a[3]) * t),
-        )
-
-    # ------------------------------------------------------------------ #
-    #  Vehicle identity / color                                            #
-    # ------------------------------------------------------------------ #
-
-    def _vehicle_id(self, vehicle: Any) -> str:
-        identifier = self._get(vehicle, "id", "vehicle_id", "name")
-        if identifier is None:
-            return f"VEH-{id(vehicle)}"
-        return str(identifier).upper()
-
-    def _vehicle_color(self, vehicle: Any, index: int) -> ColorRGB:
-        raw = self._get(vehicle, "color", "colour")
-        parsed = self._parse_color(raw)
-        if parsed is not None:
-            return parsed
-        return self.DEFAULT_VEHICLE_COLORS[index % len(self.DEFAULT_VEHICLE_COLORS)]
+def _darken(color: Tuple[int, int, int], amount: int = 40) -> Tuple[int, int, int]:
+    return tuple(max(0, c - amount) for c in color)  # type: ignore[return-value]

@@ -1,210 +1,212 @@
-#!/usr/bin/env python3
-"""HUD panel, legend, debug overlay, splash screen, and pause banner (mixin)."""
+"""
+ui/hud.py
+=========
+Heads-up display panels drawn on top of the simulation:
+
+ • Top bar      — sim clock, active vehicle count, paused badge
+ • Vehicle panel — bottom-left list of vehicles with speed + SLOW DOWN
+ • Legend        — bottom-right icon/colour key
+ • Control bar   — bottom strip with Start / Pause / Reset buttons
+"""
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+import math
+from typing import Any, Dict, List, Tuple
 
 import pygame
 
+from ui.constants import (
+    COLOR_HUD_BG, COLOR_HUD_BORDER, COLOR_HUD_TEXT, COLOR_HUD_DIM,
+    COLOR_HUD_ACCENT, COLOR_WARNING,
+    COLOR_BTN_BG, COLOR_BTN_HOVER, COLOR_BTN_TEXT,
+    COLOR_STOP_RED, COLOR_YIELD_RED, COLOR_PRIORITY_YELLOW,
+    HUD_PANEL_W, HUD_PAD, HUD_ROW_H, CONTROL_BAR_H,
+    BTN_W, BTN_H, LEGEND_W, TOP_BAR_H,
+    FONT_SM, FONT_MD, FONT_LG,
+)
+from ui.helpers import draw_alpha_rect, render_text, should_slow_down
+from ui.types import ButtonRect
 
-class HudRenderer:
-    """Mixin that draws every overlay / HUD element."""
 
-    # ------------------------------------------------------------------ #
-    #  Main HUD panel                                                      #
-    # ------------------------------------------------------------------ #
+# ══════════════════════════════════════════════════════════════════════════════
+#  FONTS (lazy-loaded singleton)
+# ══════════════════════════════════════════════════════════════════════════════
 
-    def draw_hud(
-        self,
-        surface: pygame.Surface,
-        vehicles: Sequence[Any],
-        ml_decisions: Mapping[str, Any],
-        tick: float,
-    ) -> None:
-        if self.font_small is None or self.font_tiny is None:
-            return
+_fonts: Dict[str, pygame.font.Font] = {}
 
-        max_visible = 4
-        total = len(vehicles)
-        scroll = min(self._hud_scroll_offset, max(0, total - max_visible))
-        self._hud_scroll_offset = scroll
-        visible_vehicles = list(vehicles[scroll : scroll + max_visible])
 
-        row_height = 52
-        header_h = 30
-        panel_height = header_h + max(1, len(visible_vehicles)) * row_height + 8
-        panel_width = 270
-        panel_rect = pygame.Rect(16, self.height - panel_height - 16, panel_width, panel_height)
+def _f(key: str) -> pygame.font.Font:
+    if not _fonts:
+        _fonts["sm"] = pygame.font.SysFont("arial,helvetica", FONT_SM)
+        _fonts["md"] = pygame.font.SysFont("arial,helvetica", FONT_MD)
+        _fonts["lg"] = pygame.font.SysFont("arial,helvetica", FONT_LG, bold=True)
+    return _fonts[key]
 
-        pygame.draw.rect(surface, self.HUD_BG_COLOR, panel_rect, border_radius=6)
-        pygame.draw.rect(surface, self.HUD_BORDER_COLOR, panel_rect, width=1, border_radius=6)
 
-        # Header
-        hdr_y = panel_rect.y + 6
-        hdr_text = self.font_tiny.render(
-            f"VEHICLES {total}   CONFLICTS {self._conflict_total}",
-            True,
-            (180, 180, 180),
+# ══════════════════════════════════════════════════════════════════════════════
+#  TOP BAR
+# ══════════════════════════════════════════════════════════════════════════════
+
+def draw_top_bar(
+    screen: pygame.Surface,
+    vehicles: List[Dict[str, Any]],
+    sim_time: float,
+    paused: bool,
+) -> None:
+    w = screen.get_width()
+    draw_alpha_rect(screen, COLOR_HUD_BG, pygame.Rect(0, 0, w, TOP_BAR_H), border_radius=0)
+
+    # Clock
+    mins = int(sim_time) // 60
+    secs = int(sim_time) % 60
+    ms = int((sim_time % 1) * 10)
+    clock_str = f"{mins:02d}:{secs:02d}.{ms}"
+    render_text(screen, _f("md"), clock_str, (HUD_PAD, 7), COLOR_HUD_TEXT)
+
+    # Vehicle count
+    n = len(vehicles)
+    render_text(screen, _f("sm"), f"Vehicles: {n}", (w // 2, 9), COLOR_HUD_DIM, anchor="midtop")
+
+    # Paused badge
+    if paused:
+        render_text(screen, _f("md"), "⏸  PAUSED", (w - HUD_PAD, 7), COLOR_WARNING, anchor="topright")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  VEHICLE PANEL  (bottom-left, expands upward)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def draw_vehicle_panel(
+    screen: pygame.Surface,
+    vehicles: List[Dict[str, Any]],
+    decisions: Dict[str, Dict[str, Any]],
+    frame: int,
+) -> None:
+    sh = screen.get_height()
+    n = max(1, len(vehicles))
+    panel_h = HUD_PAD * 2 + HUD_ROW_H * n + 24  # +24 for header
+    panel_y = sh - CONTROL_BAR_H - panel_h - 6
+    panel_rect = pygame.Rect(6, panel_y, HUD_PANEL_W, panel_h)
+
+    draw_alpha_rect(screen, COLOR_HUD_BG, panel_rect, border_radius=8)
+    pygame.draw.rect(screen, COLOR_HUD_BORDER, panel_rect, 1, border_radius=8)
+
+    # Header
+    render_text(screen, _f("md"), "Active Vehicles", (panel_rect.x + HUD_PAD, panel_rect.y + HUD_PAD), COLOR_HUD_ACCENT)
+
+    y = panel_rect.y + HUD_PAD + 24
+    for v in vehicles:
+        vid = v["id"]
+        speed = v.get("speed", 0.0)
+        color = _tuple_color(v.get("color", (180, 180, 180)))
+        dec = decisions.get(vid, {})
+        ml = dec.get("decision", "none")
+        slow = should_slow_down(v, ml)
+
+        # Colour swatch
+        pygame.draw.rect(screen, color, (panel_rect.x + HUD_PAD, y + 5, 14, 14), border_radius=3)
+
+        # ID
+        render_text(screen, _f("sm"), vid, (panel_rect.x + HUD_PAD + 20, y + 4), COLOR_HUD_TEXT)
+
+        # Speed
+        render_text(
+            screen, _f("sm"),
+            f"{speed:.0f} km/h",
+            (panel_rect.x + HUD_PAD + 120, y + 4),
+            COLOR_HUD_DIM,
         )
-        surface.blit(hdr_text, (panel_rect.x + 10, hdr_y))
-        if total > max_visible:
-            scroll_hint = self.font_tiny.render(
-                f"[{scroll + 1}-{scroll + len(visible_vehicles)}/{total}]",
-                True,
-                (120, 120, 120),
-            )
-            surface.blit(scroll_hint, (panel_rect.x + panel_width - 80, hdr_y))
 
-        y = panel_rect.y + header_h
-        blink_on = int((tick * 1000) // self.HUD_BLINK_MS) % 2 == 0
-        bar_w = 80
-        bar_h = 6
-
-        for vehicle in visible_vehicles:
-            vehicle_id = self._vehicle_id(vehicle)
-            state = self.vehicle_states.get(vehicle_id)
-            color = state.color if state else (255, 255, 255)
-            effective_speed_mps = self._speed_mps(vehicle) * (
-                state.speed_scale_current if state else 1.0
-            )
-            speed_kmh = self._speed_to_kmh(effective_speed_mps)
-
-            raw_decision = ml_decisions.get(vehicle_id, "none")
-            decision = self._normalize_decision(raw_decision)
-
-            # Row: ID + speed
-            id_text = self.font_small.render(f"ID {vehicle_id}".upper(), True, color)
-            speed_text = self.font_tiny.render(
-                f"SPEED {speed_kmh:>4.1f} KM/H", True, (240, 240, 240)
-            )
-            surface.blit(id_text, (panel_rect.x + 10, y))
-            surface.blit(speed_text, (panel_rect.x + 10, y + 16))
-
-            if decision == "stop" and blink_on:
-                warn = self.font_tiny.render("SLOW DOWN", True, self.WARNING_COLOR)
-                surface.blit(warn, (panel_rect.x + 165, y + 16))
-
-            # Confidence bar
-            conf_go = self._extract_confidence(raw_decision, "go")
-            conf_stop = self._extract_confidence(raw_decision, "stop")
-            if conf_go is not None or conf_stop is not None:
-                bx = panel_rect.x + 10
-                by = y + 32
-                pygame.draw.rect(surface, (40, 40, 40), (bx, by, bar_w, bar_h), border_radius=2)
-                go_val = conf_go if conf_go is not None else (1.0 - (conf_stop or 0.0))
-                go_px = max(0, min(bar_w, int(go_val * bar_w)))
-                if go_px > 0:
-                    pygame.draw.rect(
-                        surface, self.GO_COLOR, (bx, by, go_px, bar_h), border_radius=2
-                    )
-                stop_val = conf_stop if conf_stop is not None else (1.0 - (conf_go or 0.0))
-                stop_px = max(0, min(bar_w - go_px, int(stop_val * bar_w)))
-                if stop_px > 0:
-                    pygame.draw.rect(
-                        surface,
-                        self.STOP_COLOR,
-                        (bx + bar_w - stop_px, by, stop_px, bar_h),
-                        border_radius=2,
-                    )
-                lbl = self.font_tiny.render(
-                    f"GO {go_val * 100:.0f}%  STOP {stop_val * 100:.0f}%",
-                    True,
-                    (160, 160, 160),
+        # Blinking SLOW DOWN
+        if slow:
+            blink = (frame // 18) % 2 == 0  # ~0.6 s cycle at 60 fps
+            if blink:
+                render_text(
+                    screen, _f("sm"),
+                    "● SLOW DOWN",
+                    (panel_rect.x + HUD_PAD + 190, y + 4),
+                    COLOR_WARNING,
                 )
-                surface.blit(lbl, (bx + bar_w + 6, by - 2))
 
-            y += row_height
+        y += HUD_ROW_H
 
-    # ------------------------------------------------------------------ #
-    #  Splash screen                                                       #
-    # ------------------------------------------------------------------ #
 
-    def _draw_splash(self, surface: pygame.Surface, tick: float) -> None:
-        if self.font_title is None or self.font_small is None:
-            return
-        title = self.font_title.render("INTERSECTION SAFETY SIM", True, (240, 240, 240))
-        surface.blit(
-            title,
-            title.get_rect(center=(self.width // 2, self.height // 2 - 30)),
-        )
-        if int(tick * 2) % 2 == 0:
-            prompt = self.font_small.render("Press any key to start", True, (160, 160, 160))
-            surface.blit(
-                prompt,
-                prompt.get_rect(center=(self.width // 2, self.height // 2 + 20)),
-            )
-        lines = [
-            "SPACE  Pause/Resume",
-            "+ / -  Zoom in/out",
-            "R      Reset view",
-            "L      Toggle legend",
-            "F3     Debug overlay",
-            "F12    Screenshot",
-            "UP/DN  Scroll HUD",
-        ]
-        y = self.height // 2 + 60
-        for line in lines:
-            t = self.font_tiny.render(line, True, (100, 100, 100)) if self.font_tiny else None
-            if t:
-                surface.blit(t, t.get_rect(center=(self.width // 2, y)))
-                y += 16
+# ══════════════════════════════════════════════════════════════════════════════
+#  LEGEND  (bottom-right)
+# ══════════════════════════════════════════════════════════════════════════════
 
-    # ------------------------------------------------------------------ #
-    #  Legend                                                               #
-    # ------------------------------------------------------------------ #
+def draw_legend(screen: pygame.Surface) -> None:
+    sw, sh = screen.get_size()
+    items = [
+        ("Route line",        (86, 168, 255)),
+        ("Stop sign",         COLOR_STOP_RED),
+        ("Yield sign",        COLOR_YIELD_RED),
+        ("Priority sign",     COLOR_PRIORITY_YELLOW),
+        ("Slow-down zone",    COLOR_WARNING),
+    ]
+    panel_h = HUD_PAD * 2 + len(items) * 22 + 24
+    panel_x = sw - LEGEND_W - 6
+    panel_y = sh - CONTROL_BAR_H - panel_h - 6
+    panel_rect = pygame.Rect(panel_x, panel_y, LEGEND_W, panel_h)
 
-    def _draw_legend(self, surface: pygame.Surface) -> None:
-        if self.font_tiny is None:
-            return
-        x = self.width - 120
-        y = self.height - 16 - len(self.LEGEND_ITEMS) * 18 - 8
-        box_w, box_h = 112, len(self.LEGEND_ITEMS) * 18 + 10
-        pygame.draw.rect(
-            surface, self.HUD_BG_COLOR, (x - 6, y - 4, box_w, box_h), border_radius=4
-        )
-        pygame.draw.rect(
-            surface, self.HUD_BORDER_COLOR, (x - 6, y - 4, box_w, box_h), width=1, border_radius=4
-        )
-        for label, color in self.LEGEND_ITEMS:
-            pygame.draw.circle(surface, color, (x + 4, y + 6), 4)
-            text = self.font_tiny.render(label, True, (200, 200, 200))
-            surface.blit(text, (x + 14, y))
-            y += 18
+    draw_alpha_rect(screen, COLOR_HUD_BG, panel_rect, border_radius=8)
+    pygame.draw.rect(screen, COLOR_HUD_BORDER, panel_rect, 1, border_radius=8)
 
-    # ------------------------------------------------------------------ #
-    #  Debug / FPS overlay                                                 #
-    # ------------------------------------------------------------------ #
+    render_text(screen, _f("md"), "Legend", (panel_x + HUD_PAD, panel_y + HUD_PAD), COLOR_HUD_ACCENT)
 
-    def _draw_debug_overlay(
-        self, surface: pygame.Surface, vehicles: Sequence[Any], dt: float
-    ) -> None:
-        if self.font_tiny is None:
-            return
-        fps = self.clock.get_fps() if self.clock else 0.0
-        lines = [
-            f"FPS  {fps:.1f}",
-            f"DT   {dt * 1000:.1f} ms",
-            f"VEH  {len(vehicles)}",
-            f"ZOOM {self.zoom:.1f}x",
-            f"RES  {self.width}x{self.height}",
-            f"TIME {self.time_seconds:.1f}s",
-            f"CONF {self._conflict_total}",
-        ]
-        x, y = 16, 16
-        for line in lines:
-            text = self.font_tiny.render(line, True, (0, 255, 127))
-            surface.blit(text, (x, y))
-            y += 14
+    y = panel_y + HUD_PAD + 24
+    for label, color in items:
+        pygame.draw.rect(screen, color, (panel_x + HUD_PAD, y + 2, 12, 12), border_radius=2)
+        render_text(screen, _f("sm"), label, (panel_x + HUD_PAD + 18, y), COLOR_HUD_TEXT)
+        y += 22
 
-    # ------------------------------------------------------------------ #
-    #  Pause banner                                                        #
-    # ------------------------------------------------------------------ #
 
-    def _draw_pause_banner(self, surface: pygame.Surface) -> None:
-        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 100))
-        surface.blit(overlay, (0, 0))
-        if self.font_title:
-            text = self.font_title.render("PAUSED", True, (220, 220, 220))
-            surface.blit(text, text.get_rect(center=(self.width // 2, self.height // 2)))
+# ══════════════════════════════════════════════════════════════════════════════
+#  CONTROL BAR  (bottom strip)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def draw_control_bar(
+    screen: pygame.Surface,
+    paused: bool,
+    mouse_pos: Tuple[int, int],
+) -> List[ButtonRect]:
+    """
+    Draw the control bar and return a list of :class:`ButtonRect` objects
+    so the caller can detect clicks.
+    """
+    sw, sh = screen.get_size()
+    bar_rect = pygame.Rect(0, sh - CONTROL_BAR_H, sw, CONTROL_BAR_H)
+    draw_alpha_rect(screen, COLOR_HUD_BG, bar_rect)
+    pygame.draw.line(screen, COLOR_HUD_BORDER, (0, bar_rect.y), (sw, bar_rect.y))
+
+    buttons: List[ButtonRect] = []
+    labels = [("▶  Start", "start"), ("⏸  Pause", "pause"), ("↺  Reset", "reset")]
+    total_w = len(labels) * (BTN_W + 10) - 10
+    bx = sw // 2 - total_w // 2
+    by = bar_rect.y + (CONTROL_BAR_H - BTN_H) // 2
+
+    for text, name in labels:
+        rect = pygame.Rect(bx, by, BTN_W, BTN_H)
+        hovered = rect.collidepoint(mouse_pos)
+
+        # Highlight the active state button
+        if (name == "pause" and paused) or (name == "start" and not paused):
+            bg = COLOR_HUD_ACCENT
+        else:
+            bg = COLOR_BTN_HOVER if hovered else COLOR_BTN_BG
+
+        pygame.draw.rect(screen, bg, rect, border_radius=6)
+        render_text(screen, _f("sm"), text, rect.center, COLOR_BTN_TEXT, anchor="center")
+        buttons.append(ButtonRect(name, bx, by, BTN_W, BTN_H))
+        bx += BTN_W + 10
+
+    return buttons
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _tuple_color(c: Any) -> Tuple[int, int, int]:
+    if isinstance(c, (list, tuple)) and len(c) >= 3:
+        return (int(c[0]), int(c[1]), int(c[2]))
+    return (180, 180, 180)

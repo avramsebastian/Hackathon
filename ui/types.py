@@ -1,30 +1,56 @@
-#!/usr/bin/env python3
-"""Shared type aliases and data structures for the UI layer."""
+"""
+ui/types.py
+===========
+Lightweight data containers used across every UI module.
+"""
 
 from __future__ import annotations
-
 from dataclasses import dataclass, field
-from typing import List, Tuple
-
-import pygame
-
-ColorRGB = Tuple[int, int, int]
-ColorRGBA = Tuple[int, int, int, int]
+from typing import Dict, List, Tuple, Any, Optional
 
 
 @dataclass
-class VehicleRenderState:
-    """Per-vehicle visual state tracked across frames."""
+class Camera:
+    """Viewport mapping world coordinates to screen pixels."""
+    screen_w: int
+    screen_h: int
+    world_x: float = 0.0
+    world_y: float = 0.0
+    zoom: float = 3.0
 
-    color: ColorRGB
-    render_pos: pygame.Vector2
-    path_points: List[pygame.Vector2] = field(default_factory=list)
-    path_index: int = 1
-    travel_vec: pygame.Vector2 = field(default_factory=lambda: pygame.Vector2(1.0, 0.0))
-    approach_vec: pygame.Vector2 = field(default_factory=pygame.Vector2)
-    zone_from: ColorRGBA = (0, 0, 0, 0)
-    zone_target: ColorRGBA = (0, 0, 0, 0)
-    zone_current: ColorRGBA = (0, 0, 0, 0)
-    zone_frame: int = 20
-    in_detection: bool = False
-    speed_scale_current: float = 1.0
+    def world_to_screen(self, wx: float, wy: float) -> Tuple[float, float]:
+        cx = self.screen_w / 2
+        cy = self.screen_h / 2
+        sx = cx + (wx - self.world_x) * self.zoom
+        sy = cy - (wy - self.world_y) * self.zoom
+        return sx, sy
+
+    def screen_to_world(self, sx: float, sy: float) -> Tuple[float, float]:
+        cx = self.screen_w / 2
+        cy = self.screen_h / 2
+        wx = (sx - cx) / self.zoom + self.world_x
+        wy = -((sy - cy) / self.zoom) + self.world_y
+        return wx, wy
+
+
+@dataclass
+class VehicleSnapshot:
+    """Smoothed vehicle state for interpolation between bridge ticks."""
+    x: float
+    y: float
+    speed: float
+    direction: str
+    heading_deg: float
+
+
+@dataclass
+class ButtonRect:
+    """Stores a button's screen rect and label for click detection."""
+    label: str
+    x: int
+    y: int
+    w: int
+    h: int
+
+    def contains(self, mx: int, my: int) -> bool:
+        return self.x <= mx <= self.x + self.w and self.y <= my <= self.y + self.h

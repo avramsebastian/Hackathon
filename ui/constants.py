@@ -1,57 +1,98 @@
-#!/usr/bin/env python3
-"""Visual constants shared across all renderers."""
+"""
+ui/constants.py
+===============
+Every colour, dimension, and numeric constant used by the renderer.
+Nothing here imports from other ui modules — safe as a leaf dependency.
+"""
 
-from __future__ import annotations
+# ── Map colours ───────────────────────────────────────────────────────────────
+COLOR_GRASS           = (184, 212, 160)      # muted green background
+COLOR_GRASS_DARK      = (164, 196, 140)      # shadow under roads
+COLOR_ROAD            = (224, 224, 218)      # light-gray road surface
+COLOR_ROAD_EDGE       = (200, 200, 194)      # solid road edge
+COLOR_SIDEWALK        = (215, 205, 185)      # beige sidewalk strip
+COLOR_LANE_WHITE      = (255, 255, 255)      # lane markings
+COLOR_INTERSECTION    = (216, 216, 210)      # slightly different shade
 
-from typing import Sequence, Tuple
+# ── Sign colours ──────────────────────────────────────────────────────────────
+COLOR_STOP_RED        = (220, 50, 50)
+COLOR_STOP_WHITE      = (255, 255, 255)
+COLOR_YIELD_RED       = (220, 50, 50)
+COLOR_YIELD_WHITE     = (255, 255, 255)
+COLOR_PRIORITY_YELLOW = (255, 210, 0)
+COLOR_PRIORITY_WHITE  = (255, 255, 255)
+COLOR_SIGN_POLE       = (110, 110, 110)
 
-from .types import ColorRGB
+# ── Decoration colours ────────────────────────────────────────────────────────
+COLOR_TREE_TRUNK      = (139, 90, 60)
+COLOR_TREE_CANOPY_A   = (62, 145, 62)
+COLOR_TREE_CANOPY_B   = (85, 165, 75)
+COLOR_HOUSE_WALL      = (225, 215, 200)
+COLOR_HOUSE_ROOF_A    = (165, 82, 72)
+COLOR_HOUSE_ROOF_B    = (100, 120, 165)
+COLOR_HOUSE_DOOR      = (105, 75, 55)
+COLOR_HOUSE_WINDOW    = (170, 210, 240)
+COLOR_PERSON_SKIN     = (210, 175, 140)
+COLOR_PERSON_SHIRT_A  = (70, 130, 200)
+COLOR_PERSON_SHIRT_B  = (200, 85, 85)
 
+# ── HUD / panel colours ──────────────────────────────────────────────────────
+COLOR_HUD_BG          = (28, 30, 42, 210)
+COLOR_HUD_BORDER      = (58, 62, 80)
+COLOR_HUD_TEXT        = (230, 230, 235)
+COLOR_HUD_DIM         = (145, 145, 165)
+COLOR_HUD_ACCENT      = (86, 168, 255)
+COLOR_WARNING         = (255, 70, 70)
+COLOR_BTN_BG          = (50, 55, 72)
+COLOR_BTN_HOVER       = (72, 78, 100)
+COLOR_BTN_TEXT        = (230, 230, 235)
 
-class ViewConstants:
-    """Mixin providing every visual / layout constant."""
+# ── Launch screen colours ─────────────────────────────────────────────────────
+COLOR_LAUNCH_BG       = (22, 26, 38)
+COLOR_LAUNCH_GRID     = (30, 34, 48)
+COLOR_LAUNCH_ROAD     = (48, 52, 68)
+COLOR_LAUNCH_DASH     = (78, 82, 100)
+COLOR_LAUNCH_TITLE    = (235, 235, 245)
+COLOR_LAUNCH_SUB      = (140, 150, 180)
+COLOR_LAUNCH_BTN      = (86, 168, 255)
+COLOR_LAUNCH_BTN_H    = (120, 190, 255)
 
-    BG_COLOR: ColorRGB = (15, 15, 15)
-    ROAD_COLOR: ColorRGB = (30, 30, 30)
-    LANE_DASH_COLOR: ColorRGB = (58, 58, 58)
-    LANE_EDGE_COLOR: ColorRGB = (42, 42, 42)
-    HUD_BG_COLOR: ColorRGB = (22, 22, 22)
-    HUD_BORDER_COLOR: ColorRGB = (42, 42, 42)
-    WARNING_COLOR: ColorRGB = (255, 60, 60)
-    GO_COLOR: ColorRGB = (0, 255, 127)
-    STOP_COLOR: ColorRGB = (255, 60, 60)
-    CONFLICT_COLOR: ColorRGB = (255, 136, 0)
+# ── Camera defaults ───────────────────────────────────────────────────────────
+DEFAULT_ZOOM  = 3.0
+MIN_ZOOM      = 1.0
+MAX_ZOOM      = 10.0
+ZOOM_STEP     = 0.3
 
-    ROAD_LINE_ALPHA = 72
-    DETECTION_OUTLINE_ALPHA = 80
-    ZONE_GO_ALPHA = 84
-    ZONE_STOP_ALPHA = 84
-    ZONE_TRANSITION_FRAMES = 20
-    CONFLICT_ALPHA_MIN = 60
-    CONFLICT_ALPHA_MAX = 120
-    HUD_BLINK_MS = 500
+# ── Road dimensions (world metres) ───────────────────────────────────────────
+LANE_WIDTH_M       = 7.0          # half the road — matches LANE_OFFSET in world.py
+ROAD_HALF_W        = 10.0         # total half-width including shoulder
+SIDEWALK_W         = 3.0
+ROAD_LENGTH        = 180.0        # how far roads extend from centre
+DASH_LEN           = 3.0          # centre-line dash length
+DASH_GAP           = 3.0
 
-    PIXELS_PER_METER = 3.5  # 1 px ≈ 0.29 m
-    INTERSECTION_BOX_SIZE = 180
-    LANE_WIDTH = 24
-    DETECTION_DISTANCE_PX = 100
-    DETECTION_RADIUS_PX = 34
+# ── Vehicle dimensions (world metres) ────────────────────────────────────────
+CAR_LENGTH         = 4.5
+CAR_WIDTH          = 2.2
+HEADLIGHT_R        = 0.35
+HEADLIGHT_INSET    = 0.55
 
-    DEFAULT_VEHICLE_COLORS: Sequence[ColorRGB] = (
-        (86, 168, 255),
-        (255, 88, 88),
-        (100, 226, 170),
-        (246, 191, 90),
-        (180, 120, 255),
-        (255, 160, 100),
-    )
+# ── Awareness zone ────────────────────────────────────────────────────────────
+AWARENESS_DIVISOR  = 5.0          # awareness_m = speed_kmh / this
 
-    LEGEND_ITEMS: Sequence[Tuple[str, ColorRGB]] = (
-        ("GO", (0, 255, 127)),
-        ("STOP", (255, 60, 60)),
-        ("CONFLICT", (255, 136, 0)),
-    )
+# ── HUD dimensions (pixels) ──────────────────────────────────────────────────
+HUD_PANEL_W        = 275
+HUD_PAD            = 12
+HUD_ROW_H          = 30
+CONTROL_BAR_H      = 48
+BTN_W              = 90
+BTN_H              = 34
+LEGEND_W           = 210
+TOP_BAR_H          = 32
 
-    SPEED_UNIT = "kmh"
-
-    SCREENSHOT_DIR = "screenshots"
+# ── Font sizes ────────────────────────────────────────────────────────────────
+FONT_SM   = 13
+FONT_MD   = 16
+FONT_LG   = 22
+FONT_XL   = 42
+FONT_TTL  = 56

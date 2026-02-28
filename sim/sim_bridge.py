@@ -221,24 +221,31 @@ class SimBridge:
 
     # ── tick ──────────────────────────────────────────────────────────────────
 
-    def _tick(self, dt: float) -> None:
-        # 1. Snapshot world → ML input
-        ml_input = self._world.get_ml_input()
+    def _infer_for_car(self, my_car: Car, others: Sequence[Car]) -> Dict[str, Any]:
+        """
+        Run ML inference from one car's perspective.
 
-        # 2. Run ML inference for the player car
-        raw = fa_inferenta_din_json(ml_input, model_path=self._model_path)
-
-        decision_payload: Dict[str, Any]
+        ``my_car`` is treated as the ego vehicle and ``others`` as traffic.
+        Returns a normalized decision payload consumed by the UI.
+        """
+        raw = fa_inferenta_din_json(
+            {
+                "my_car": my_car.as_dict(),
+                "sign": self._world.current_sign,
+                "traffic": [c.as_dict() for c in others],
+            },
+            model_path=self._model_path,
+        )
         if raw.get("status") == "success":
-            decision_payload = {
+            return {
                 "decision": raw["decision"],
                 "confidence_go": float(raw.get("confidence_go", 0.0)),
                 "confidence_stop": float(raw.get("confidence_stop", 0.0)),
             }
-        else:
-            decision_payload = {"decision": "none"}
+        return {"decision": "none"}
 
-        # 3. Build vehicle list with rich UI fields
+    def _tick(self, dt: float) -> None:
+        # 1. Build vehicle list with rich UI fields
         player_dict = self._make_vehicle_dict(
             self._world.my_car, "PLAYER", _VEHICLE_COLORS[0]
         )
@@ -248,19 +255,28 @@ class SimBridge:
         ]
         all_vehicles = [player_dict] + traffic_dicts
 
-        # 4. Publish to real V2X bus
+        # 2. Compute an ML decision for each car instance
+        all_cars: List[Tuple[str, Car]] = [("PLAYER", self._world.my_car)] + [
+            (f"TRAFFIC_{i}", car) for i, car in enumerate(self._world.traffic)
+        ]
+        decisions: Dict[str, Any] = {}
+        for vid, car in all_cars:
+            others = [other for _, other in all_cars if other is not car]
+            decisions[vid] = self._infer_for_car(car, others)
+
+        # 3. Publish to real V2X bus
         self._bus.publish(
             topic="v2v.state",
             sender="PLAYER",
             payload={
-                **decision_payload,
+                **decisions.get("PLAYER", {"decision": "none"}),
                 "position": self._world.my_car.as_dict(),
                 "traffic": [c.as_dict() for c in self._world.traffic],
                 "sign": self._world.current_sign,
             },
         )
 
-        # 5. Build intersection metadata
+        # 4. Build intersection metadata
         sign = self._world.current_sign
         intersection_meta: Dict[str, Any] = {
             "signs": {"N": sign, "S": sign, "E": sign, "W": sign},
@@ -268,15 +284,10 @@ class SimBridge:
             "box_size": 100,
         }
 
-        # 6. Build decisions dict keyed by UPPER vehicle ID
-        decisions: Dict[str, Any] = {"PLAYER": decision_payload}
-        for i in range(len(self._world.traffic)):
-            decisions[f"TRAFFIC_{i}"] = {"decision": "none"}
-
-        # 7. Advance physics
+        # 5. Advance physics
         self._world.update_physics(dt=dt)
 
-        # 8. Atomic swap
+        # 6. Atomic swap
         with self._lock:
             self._vehicles = all_vehicles
             self._decisions = decisions

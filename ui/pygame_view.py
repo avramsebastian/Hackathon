@@ -1,332 +1,345 @@
-#!/usr/bin/env python3
 """
-Main view class — combines all UI mixins into one runnable Pygame window.
+ui/pygame_view.py
+=================
+Main Pygame loop that ties everything together:
 
-Module layout
-─────────────
-    ui/
-    ├── types.py           – ColorRGB, ColorRGBA, VehicleRenderState
-    ├── constants.py       – ViewConstants mixin (all class-level constants)
-    ├── helpers.py         – ViewHelpers mixin  (static utilities)
-    ├── draw_road.py       – RoadRenderer mixin (roads, lanes, signs)
-    ├── draw_vehicles.py   – VehicleRenderer mixin (sprites, zones, animation)
-    ├── hud.py             – HudRenderer mixin  (HUD, legend, debug, splash)
-    └── pygame_view.py     – PygameIntersectionView (this file – main loop)
+ 1. **Launch screen** — stylised title card with START SIMULATION button.
+ 2. **Simulation screen** — map + vehicles + HUD + control bar.
+
+The only public symbol is :func:`run_pygame_view`; it blocks until the
+user closes the window.
+
+Bridge dependency
+-----------------
+The *bridge* object must expose:
+
+    get_vehicles()           → List[dict]
+    get_ml_decision(id: str) → dict   {"decision", …}
+    get_intersection()       → dict   {"signs", "lane_count", "box_size"}
+    is_finished()            → bool
+    reset()                  → None
+    set_paused(bool)         → None
 """
 
 from __future__ import annotations
 
-import os
-from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+import time
+import math
+import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 import pygame
 
-from .constants import ViewConstants
-from .draw_road import RoadRenderer
-from .draw_vehicles import VehicleRenderer
-from .helpers import ViewHelpers
-from .hud import HudRenderer
-from .types import VehicleRenderState
+from ui.constants import (
+    DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP,
+    CONTROL_BAR_H,
+    COLOR_LAUNCH_BG, COLOR_LAUNCH_GRID, COLOR_LAUNCH_ROAD,
+    COLOR_LAUNCH_DASH, COLOR_LAUNCH_TITLE, COLOR_LAUNCH_SUB,
+    COLOR_LAUNCH_BTN, COLOR_LAUNCH_BTN_H, COLOR_HUD_TEXT,
+    COLOR_HUD_DIM, COLOR_WARNING,
+    FONT_SM, FONT_MD, FONT_LG, FONT_XL, FONT_TTL,
+)
+from ui.types import Camera, ButtonRect
+from ui.draw_road import draw_map
+from ui.draw_vehicles import draw_all_vehicles
+from ui.hud import draw_top_bar, draw_vehicle_panel, draw_legend, draw_control_bar
+
+log = logging.getLogger("pygame_view")
 
 
-class PygameIntersectionView(
-    ViewConstants,
-    ViewHelpers,
-    RoadRenderer,
-    VehicleRenderer,
-    HudRenderer,
-):
-    """Intersection-safety visualiser powered by Pygame.
+# ══════════════════════════════════════════════════════════════════════════════
+#  PUBLIC API
+# ══════════════════════════════════════════════════════════════════════════════
 
-    Inherits drawing logic from focused mixin modules so each file
-    stays small and single-purpose.
-    """
-
-    def __init__(self, bus: Any, width: int = 1000, height: int = 700, fps: int = 60):
-        self.bus = bus
-        self.width = width
-        self.height = height
-        self.fps = fps
-
-        self.screen: Optional[pygame.Surface] = None
-        self.clock: Optional[pygame.time.Clock] = None
-        self.font_small: Optional[pygame.font.Font] = None
-        self.font_tiny: Optional[pygame.font.Font] = None
-        self.font_title: Optional[pygame.font.Font] = None
-
-        self.center = pygame.Vector2(width * 0.5, height * 0.5)
-        self.time_seconds = 0.0
-        self.vehicle_states: Dict[str, VehicleRenderState] = {}
-
-        # UI state
-        self.paused = False
-        self.show_debug = False
-        self.show_legend = True
-        self.show_splash = False
-        self.zoom = 1.0
-        self._hud_scroll_offset = 0
-        self._conflict_total = 0
-        self._screenshot_flash_until = 0.0
-
-    # ------------------------------------------------------------------ #
-    #  Resize                                                              #
-    # ------------------------------------------------------------------ #
-    def _handle_resize(self, new_w: int, new_h: int) -> None:
-        self.width = max(400, new_w)
-        self.height = max(300, new_h)
-        self.center = pygame.Vector2(self.width * 0.5, self.height * 0.5)
-        self.screen = pygame.display.set_mode(
-            (self.width, self.height), pygame.RESIZABLE
-        )
-
-    # ------------------------------------------------------------------ #
-    #  Screenshot                                                          #
-    # ------------------------------------------------------------------ #
-    def _take_screenshot(self) -> None:
-        if self.screen is None:
-            return
-        os.makedirs(self.SCREENSHOT_DIR, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        path = os.path.join(self.SCREENSHOT_DIR, f"sim_{stamp}.png")
-        pygame.image.save(self.screen, path)
-        self._screenshot_flash_until = self.time_seconds + 0.35
-
-    # ------------------------------------------------------------------ #
-    #  Bus polling                                                         #
-    # ------------------------------------------------------------------ #
-    def _poll_bus(self) -> Tuple[List[Any], Dict[str, Any], Any]:
-        vehicles_payload = []
-        if hasattr(self.bus, "get_vehicles"):
-            vehicles_payload = self.bus.get_vehicles() or []
-
-        vehicles: List[Any]
-        intersection: Any = {}
-
-        # ── New ML-input format: {"my_car": {...}, "sign": ..., "traffic": [...]}
-        if isinstance(vehicles_payload, Mapping) and "my_car" in vehicles_payload:
-            vehicles = []
-            my_car = dict(vehicles_payload["my_car"])
-            my_car.setdefault("id", "PLAYER")
-            vehicles.append(my_car)
-            for i, t in enumerate(vehicles_payload.get("traffic", [])):
-                td = dict(t)
-                td.setdefault("id", f"TRAFFIC_{i}")
-                vehicles.append(td)
-            sign = str(vehicles_payload.get("sign", "YIELD")).strip().upper()
-            intersection = {
-                "signs": {"N": sign, "S": sign, "E": sign, "W": sign},
-                "lane_count": 2,
-                "box_size": 100,
-            }
-        elif isinstance(vehicles_payload, Mapping):
-            vehicles = []
-            for key, raw_vehicle in vehicles_payload.items():
-                if isinstance(raw_vehicle, Mapping):
-                    merged = dict(raw_vehicle)
-                    merged.setdefault("id", key)
-                    vehicles.append(merged)
-                else:
-                    vehicles.append(raw_vehicle)
-        else:
-            vehicles = list(vehicles_payload)
-
-        decisions: Dict[str, Any] = {}
-        if hasattr(self.bus, "get_ml_decision"):
-            for vehicle in vehicles:
-                vehicle_id = self._vehicle_id(vehicle)
-                try:
-                    decisions[vehicle_id] = self.bus.get_ml_decision(vehicle_id)
-                except Exception:
-                    decisions[vehicle_id] = "none"
-
-        if not intersection:
-            if hasattr(self.bus, "get_intersection"):
-                try:
-                    intersection = self.bus.get_intersection() or {}
-                except Exception:
-                    intersection = {}
-
-        return vehicles, decisions, intersection
-
-    # ------------------------------------------------------------------ #
-    #  Main loop                                                           #
-    # ------------------------------------------------------------------ #
-    def run(self) -> None:
-        pygame.init()
-        pygame.display.set_caption("INTERSECTION SAFETY SIM")
-        self.screen = pygame.display.set_mode(
-            (self.width, self.height), pygame.RESIZABLE
-        )
-        self.clock = pygame.time.Clock()
-        self.font_small = self._load_font(13, bold=False)
-        self.font_tiny = self._load_font(11, bold=False)
-        self.font_title = self._load_font(28, bold=True)
-
-        running = True
-        while running:
-            delta_time = self.clock.tick(self.fps) / 1000.0
-            self.time_seconds += delta_time
-
-            # ---- events ------------------------------------------------- #
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                elif event.type == pygame.VIDEORESIZE:
-                    self._handle_resize(event.w, event.h)
-                elif event.type == pygame.KEYDOWN:
-                    if self.show_splash:
-                        self.show_splash = False
-                        continue
-                    if event.key == pygame.K_SPACE:
-                        self.paused = not self.paused
-                        if hasattr(self.bus, 'set_paused'):
-                            self.bus.set_paused(self.paused)
-                    elif event.key == pygame.K_F3:
-                        self.show_debug = not self.show_debug
-                    elif event.key == pygame.K_l:
-                        self.show_legend = not self.show_legend
-                    elif event.key == pygame.K_r:
-                        self.zoom = 1.0
-                        self.vehicle_states.clear()
-                        self._hud_scroll_offset = 0
-                        self._conflict_total = 0
-                        self.paused = False
-                        if hasattr(self.bus, 'reset'):
-                            self.bus.reset()
-                        if hasattr(self.bus, 'set_paused'):
-                            self.bus.set_paused(False)
-                    elif event.key == pygame.K_F12:
-                        self._take_screenshot()
-                    elif event.key in (pygame.K_EQUALS, pygame.K_PLUS):
-                        self.zoom = min(3.0, self.zoom + 0.1)
-                    elif event.key == pygame.K_MINUS:
-                        self.zoom = max(0.3, self.zoom - 0.1)
-                    elif event.key == pygame.K_UP:
-                        self._hud_scroll_offset = max(0, self._hud_scroll_offset - 1)
-                    elif event.key == pygame.K_DOWN:
-                        self._hud_scroll_offset += 1
-
-            # ---- splash ------------------------------------------------- #
-            if self.show_splash:
-                self.screen.fill(self.BG_COLOR)
-                self._draw_splash(self.screen, self.time_seconds)
-                pygame.display.flip()
-                continue
-
-            # ---- auto-pause when simulation finishes -------------------- #
-            if (not self.paused
-                    and hasattr(self.bus, 'is_finished')
-                    and self.bus.is_finished()):
-                self.paused = True
-                if hasattr(self.bus, 'set_paused'):
-                    self.bus.set_paused(True)
-
-            # ---- simulation tick ---------------------------------------- #
-            if not self.paused:
-                vehicles, ml_decisions, intersection = self._poll_bus()
-                self._last_vehicles = vehicles
-                self._last_ml_decisions = ml_decisions
-                self._last_intersection = intersection
-            else:
-                vehicles = getattr(self, '_last_vehicles', [])
-                ml_decisions = getattr(self, '_last_ml_decisions', {})
-                intersection = getattr(self, '_last_intersection', {})
-            if not self.paused:
-                self._sync_vehicle_states(vehicles)
-                for vehicle in vehicles:
-                    vehicle_id = self._vehicle_id(vehicle)
-                    self.animate_vehicle(
-                        vehicle,
-                        ml_decisions.get(vehicle_id, "none"),
-                        delta_time,
-                    )
-
-            # ---- render ------------------------------------------------- #
-            self.screen.fill(self.BG_COLOR)
-
-            # Apply zoom via a transform surface
-            if abs(self.zoom - 1.0) > 0.01:
-                world_surf = pygame.Surface(
-                    (self.width, self.height), pygame.SRCALPHA
-                )
-            else:
-                world_surf = self.screen
-
-            self.draw_road(world_surf, intersection)
-            self.draw_lane_markings(world_surf, intersection)
-            self.draw_signs(world_surf, intersection)
-
-            for vehicle in vehicles:
-                self.draw_road_line(world_surf, vehicle)
-
-            for vehicle in vehicles:
-                vehicle_id = self._vehicle_id(vehicle)
-                self.draw_detection_zone(
-                    world_surf,
-                    vehicle,
-                    ml_decisions.get(vehicle_id, "none"),
-                )
-
-            vehicles_in_detection = sum(
-                1 for state in self.vehicle_states.values() if state.in_detection
-            )
-            if vehicles_in_detection >= 2:
-                self.draw_conflict_highlight(
-                    world_surf, intersection, self.time_seconds
-                )
-                self._conflict_total += 1
-
-            for vehicle in vehicles:
-                self.draw_vehicle(world_surf, vehicle)
-
-            # Blit zoomed world
-            if world_surf is not self.screen:
-                scaled_w = int(self.width * self.zoom)
-                scaled_h = int(self.height * self.zoom)
-                scaled = pygame.transform.smoothscale(
-                    world_surf, (scaled_w, scaled_h)
-                )
-                self.screen.blit(
-                    scaled,
-                    (
-                        (self.width - scaled_w) // 2,
-                        (self.height - scaled_h) // 2,
-                    ),
-                )
-
-            # HUD layers (drawn on top, unzoomed)
-            self.draw_hud(self.screen, vehicles, ml_decisions, self.time_seconds)
-            if self.show_legend:
-                self._draw_legend(self.screen)
-            if self.show_debug:
-                self._draw_debug_overlay(self.screen, vehicles, delta_time)
-            if self.paused:
-                self._draw_pause_banner(self.screen)
-            if self.time_seconds < self._screenshot_flash_until:
-                flash = pygame.Surface(
-                    (self.width, self.height), pygame.SRCALPHA
-                )
-                flash.fill((255, 255, 255, 40))
-                self.screen.blit(flash, (0, 0))
-
-            pygame.display.flip()
-
-        pygame.quit()
-
-
-# ---------------------------------------------------------------------- #
-#  Convenience entry point                                                 #
-# ---------------------------------------------------------------------- #
 def run_pygame_view(
-    bus: Any, width: int = 1000, height: int = 700, fps: int = 60
+    bridge: Any,
+    width: int = 1000,
+    height: int = 700,
+    fps: int = 60,
 ) -> None:
-    view = PygameIntersectionView(bus=bus, width=width, height=height, fps=fps)
-    view.run()
+    """
+    Open the Pygame window, show the launch screen, then the simulation.
+    Blocks until the window is closed.
+    """
+    pygame.init()
+    pygame.display.set_caption("V2X Intersection Safety Simulator")
+    screen = pygame.display.set_mode((width, height))
+    clock = pygame.time.Clock()
+
+    fonts = _load_fonts()
+
+    # ── state ──
+    scene: str = "launch"  # "launch" | "sim"
+    camera = Camera(width, height, zoom=DEFAULT_ZOOM)
+    paused = False
+    show_legend = True
+    sim_time = 0.0
+    frame = 0
+
+    # Vehicle interpolation
+    prev_vehicles: List[Dict[str, Any]] = []
+    curr_vehicles: List[Dict[str, Any]] = []
+    last_poll = time.time()
+    poll_interval = 0.1  # 10 Hz, matching bridge default
+
+    # Panning state
+    panning = False
+    pan_origin: Optional[Tuple[int, int]] = None
+    cam_origin: Optional[Tuple[float, float]] = None
+
+    running = True
+    while running:
+        dt = clock.tick(fps) / 1000.0
+        mouse_pos = pygame.mouse.get_pos()
+        frame += 1
+
+        # ── Events ────────────────────────────────────────────────────────
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            elif event.type == pygame.KEYDOWN:
+                if scene == "launch":
+                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        scene = "sim"
+                elif scene == "sim":
+                    _handle_sim_key(event.key, bridge, camera)
+                    if event.key == pygame.K_SPACE:
+                        paused = not paused
+                        bridge.set_paused(paused)
+                    elif event.key == pygame.K_l:
+                        show_legend = not show_legend
+                    elif event.key == pygame.K_r:
+                        bridge.reset()
+                        sim_time = 0.0
+                        prev_vehicles = []
+                        curr_vehicles = []
+                    elif event.key == pygame.K_F12:
+                        _screenshot(screen)
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if scene == "launch":
+                    # START button hit-test is handled below via btn_rect
+                    pass
+                elif scene == "sim":
+                    if event.button == 3 or event.button == 2:  # right / middle
+                        panning = True
+                        pan_origin = event.pos
+                        cam_origin = (camera.world_x, camera.world_y)
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button in (2, 3):
+                    panning = False
+
+            elif event.type == pygame.MOUSEMOTION and panning:
+                if pan_origin and cam_origin:
+                    dx = event.pos[0] - pan_origin[0]
+                    dy = event.pos[1] - pan_origin[1]
+                    camera.world_x = cam_origin[0] - dx / camera.zoom
+                    camera.world_y = cam_origin[1] + dy / camera.zoom
+
+            elif event.type == pygame.MOUSEWHEEL and scene == "sim":
+                # Zoom toward cursor
+                _zoom_toward(camera, mouse_pos, event.y)
+
+        # ── Render ────────────────────────────────────────────────────────
+        if scene == "launch":
+            btn_rect = _draw_launch_screen(screen, fonts, mouse_pos, frame)
+            # Check START click
+            if pygame.mouse.get_pressed()[0] and btn_rect.collidepoint(mouse_pos):
+                scene = "sim"
+
+        elif scene == "sim":
+            if not paused:
+                sim_time += dt
+
+            # Poll bridge
+            now = time.time()
+            if now - last_poll >= poll_interval:
+                prev_vehicles = curr_vehicles
+                curr_vehicles = bridge.get_vehicles()
+                last_poll = now
+
+            # Interpolation factor
+            t = min(1.0, (now - last_poll) / poll_interval) if poll_interval > 0 else 1.0
+            from ui.helpers import interpolate_vehicles
+            interp = interpolate_vehicles(prev_vehicles, curr_vehicles, t)
+
+            # Decisions
+            decisions: Dict[str, Dict[str, Any]] = {}
+            for v in curr_vehicles:
+                decisions[v["id"]] = bridge.get_ml_decision(v["id"])
+
+            intersection = bridge.get_intersection()
+
+            # Draw layers
+            draw_map(screen, camera, intersection)
+            draw_all_vehicles(screen, camera, interp, decisions, frame)
+            draw_top_bar(screen, interp, sim_time, paused)
+            draw_vehicle_panel(screen, interp, decisions, frame)
+            if show_legend:
+                draw_legend(screen)
+            ctrl_btns = draw_control_bar(screen, paused, mouse_pos)
+
+            # Control-bar click handling
+            if pygame.mouse.get_pressed()[0]:
+                for btn in ctrl_btns:
+                    if btn.contains(*mouse_pos):
+                        if btn.label == "start":
+                            paused = False
+                            bridge.set_paused(False)
+                        elif btn.label == "pause":
+                            paused = True
+                            bridge.set_paused(True)
+                        elif btn.label == "reset":
+                            bridge.reset()
+                            sim_time = 0.0
+                            prev_vehicles = []
+                            curr_vehicles = []
+
+            # Finished overlay
+            if bridge.is_finished():
+                _draw_finished_overlay(screen, fonts)
+
+        pygame.display.flip()
+
+    pygame.quit()
 
 
-if __name__ == "__main__":
-    raise SystemExit(
-        "pygame_view.py needs a bus object. Run `python Hackathon/main.py` "
-        "or call run_pygame_view(your_bus)."
-    )
+# ══════════════════════════════════════════════════════════════════════════════
+#  LAUNCH SCREEN
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _draw_launch_screen(
+    screen: pygame.Surface,
+    fonts: Dict[str, pygame.font.Font],
+    mouse_pos: Tuple[int, int],
+    frame: int,
+) -> pygame.Rect:
+    """Draw the title card and return the START button Rect."""
+    w, h = screen.get_size()
+    screen.fill(COLOR_LAUNCH_BG)
+
+    # Subtle grid
+    for x in range(0, w, 40):
+        pygame.draw.line(screen, COLOR_LAUNCH_GRID, (x, 0), (x, h))
+    for y in range(0, h, 40):
+        pygame.draw.line(screen, COLOR_LAUNCH_GRID, (0, y), (w, y))
+
+    # Decorative road strip
+    road_y = h // 2 + 10
+    pygame.draw.rect(screen, COLOR_LAUNCH_ROAD, (0, road_y - 25, w, 50))
+    for dx in range(0, w, 40):
+        pygame.draw.rect(screen, COLOR_LAUNCH_DASH, (dx, road_y - 1, 20, 2))
+
+    # Animated tiny car on road
+    car_x = int((frame * 1.8) % (w + 100)) - 50
+    pygame.draw.rect(screen, (86, 168, 255), (car_x, road_y - 8, 30, 14), border_radius=4)
+    pygame.draw.circle(screen, (255, 255, 200), (car_x + 28, road_y - 4), 3)
+    pygame.draw.circle(screen, (255, 255, 200), (car_x + 28, road_y + 4), 3)
+
+    # Title
+    t1 = fonts["title"].render("INTERSECTION", True, COLOR_LAUNCH_TITLE)
+    t2 = fonts["xlarge"].render("VISIBILITY  ASSISTANT", True, COLOR_LAUNCH_SUB)
+    screen.blit(t1, (w // 2 - t1.get_width() // 2, h // 4 - 30))
+    screen.blit(t2, (w // 2 - t2.get_width() // 2, h // 4 + 40))
+
+    # Subtitle
+    sub = fonts["small"].render("Pygame 2-D Simulation  •  V2X Safety", True, COLOR_HUD_DIM)
+    screen.blit(sub, (w // 2 - sub.get_width() // 2, h // 4 + 80))
+
+    # START button
+    btn_w, btn_h = 280, 54
+    btn_x = w // 2 - btn_w // 2
+    btn_y = h * 3 // 4 - btn_h // 2
+    btn_rect = pygame.Rect(btn_x, btn_y, btn_w, btn_h)
+    hovered = btn_rect.collidepoint(mouse_pos)
+    btn_color = COLOR_LAUNCH_BTN_H if hovered else COLOR_LAUNCH_BTN
+
+    # Glow
+    if hovered:
+        glow = pygame.Surface((btn_w + 24, btn_h + 24), pygame.SRCALPHA)
+        pygame.draw.rect(glow, (*btn_color, 35), (0, 0, btn_w + 24, btn_h + 24), border_radius=18)
+        screen.blit(glow, (btn_x - 12, btn_y - 12))
+
+    pygame.draw.rect(screen, btn_color, btn_rect, border_radius=12)
+    txt = fonts["medium"].render("START  SIMULATION", True, (255, 255, 255))
+    screen.blit(txt, (btn_x + btn_w // 2 - txt.get_width() // 2, btn_y + btn_h // 2 - txt.get_height() // 2))
+
+    # Controls hint
+    hint = fonts["small"].render("Press ENTER or click the button", True, COLOR_HUD_DIM)
+    screen.blit(hint, (w // 2 - hint.get_width() // 2, btn_y + btn_h + 18))
+
+    return btn_rect
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _draw_finished_overlay(
+    screen: pygame.Surface, fonts: Dict[str, pygame.font.Font]
+) -> None:
+    w, h = screen.get_size()
+    overlay = pygame.Surface((w, h), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 100))
+    screen.blit(overlay, (0, 0))
+    txt = fonts["xlarge"].render("SIMULATION  COMPLETE", True, COLOR_HUD_TEXT)
+    screen.blit(txt, (w // 2 - txt.get_width() // 2, h // 2 - txt.get_height() // 2))
+    sub = fonts["medium"].render("Press R to reset", True, COLOR_HUD_DIM)
+    screen.blit(sub, (w // 2 - sub.get_width() // 2, h // 2 + 30))
+
+
+def _handle_sim_key(key: int, bridge: Any, camera: Camera) -> None:
+    """Handle zoom and pan keys (non-toggle)."""
+    if key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
+        camera.zoom = min(MAX_ZOOM, camera.zoom + ZOOM_STEP)
+    elif key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+        camera.zoom = max(MIN_ZOOM, camera.zoom - ZOOM_STEP)
+    elif key == pygame.K_UP:
+        camera.world_y += 10.0 / camera.zoom
+    elif key == pygame.K_DOWN:
+        camera.world_y -= 10.0 / camera.zoom
+    elif key == pygame.K_LEFT:
+        camera.world_x -= 10.0 / camera.zoom
+    elif key == pygame.K_RIGHT:
+        camera.world_x += 10.0 / camera.zoom
+
+
+def _zoom_toward(camera: Camera, mouse_pos: Tuple[int, int], direction: int) -> None:
+    """Zoom in/out centred on mouse cursor."""
+    old_zoom = camera.zoom
+    if direction > 0:
+        camera.zoom = min(MAX_ZOOM, camera.zoom + ZOOM_STEP)
+    else:
+        camera.zoom = max(MIN_ZOOM, camera.zoom - ZOOM_STEP)
+    # Adjust world offset so the point under the cursor stays fixed
+    mx, my = mouse_pos
+    cx, cy = camera.screen_w / 2, camera.screen_h / 2
+    factor = 1.0 / camera.zoom - 1.0 / old_zoom
+    camera.world_x += (mx - cx) * factor
+    camera.world_y -= (my - cy) * factor
+
+
+def _screenshot(screen: pygame.Surface) -> None:
+    import datetime
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = f"screenshots/sim_{ts}.png"
+    try:
+        import os
+        os.makedirs("screenshots", exist_ok=True)
+        pygame.image.save(screen, path)
+        log.info("Screenshot saved to %s", path)
+    except Exception as e:
+        log.warning("Could not save screenshot: %s", e)
+
+
+def _load_fonts() -> Dict[str, pygame.font.Font]:
+    family = "arial,helvetica"
+    return {
+        "small":  pygame.font.SysFont(family, FONT_SM),
+        "medium": pygame.font.SysFont(family, FONT_MD),
+        "large":  pygame.font.SysFont(family, FONT_LG, bold=True),
+        "xlarge": pygame.font.SysFont(family, FONT_XL, bold=True),
+        "title":  pygame.font.SysFont(family, FONT_TTL, bold=True),
+    }

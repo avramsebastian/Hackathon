@@ -1,105 +1,139 @@
-#!/usr/bin/env python3
-"""Static / utility helpers used across the UI layer."""
+"""
+ui/helpers.py
+=============
+Pure utility functions shared across UI modules:
+coordinate transforms, alpha-surface drawing, direction ↔ heading mapping,
+interpolation, and awareness-zone logic.
+"""
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Sequence
+import math
+from typing import Dict, List, Tuple, Any, Optional
 
 import pygame
 
-from .types import ColorRGB
+from ui.constants import AWARENESS_DIVISOR
+
+# ── Direction / heading ───────────────────────────────────────────────────────
+
+_DIR_TO_HEADING: Dict[str, float] = {
+    "EAST":  0.0,
+    "NORTH": 90.0,
+    "WEST":  180.0,
+    "SOUTH": 270.0,
+}
 
 
-class ViewHelpers:
-    """Mixin with generic data-access, parsing, and font utilities."""
+def direction_to_heading(direction: str) -> float:
+    """Convert a cardinal direction string to degrees (0 = East, CCW)."""
+    return _DIR_TO_HEADING.get(direction.upper(), 0.0)
 
-    # -------------------------------------------------------------- #
-    #  Generic data access                                             #
-    # -------------------------------------------------------------- #
-    @staticmethod
-    def _get(obj: Any, *keys: str, default: Any = None) -> Any:
-        if isinstance(obj, Mapping):
-            for key in keys:
-                if key in obj:
-                    return obj[key]
-        for key in keys:
-            if hasattr(obj, key):
-                return getattr(obj, key)
-        return default
 
-    @staticmethod
-    def _as_float(value: Any) -> Optional[float]:
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return None
+# ── Interpolation helpers ─────────────────────────────────────────────────────
 
-    @staticmethod
-    def _as_int(value: Any, default: int = 0) -> int:
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            return default
+def lerp(a: float, b: float, t: float) -> float:
+    return a + (b - a) * t
 
-    # -------------------------------------------------------------- #
-    #  Color parsing                                                   #
-    # -------------------------------------------------------------- #
-    def _parse_color(self, raw: Any) -> Optional[ColorRGB]:
-        if isinstance(raw, str):
-            text = raw.strip()
-            if text.startswith("#") and len(text) == 7:
-                try:
-                    return (int(text[1:3], 16), int(text[3:5], 16), int(text[5:7], 16))
-                except ValueError:
-                    return None
-        if isinstance(raw, Sequence) and len(raw) >= 3:
-            try:
-                r = max(0, min(255, int(raw[0])))
-                g = max(0, min(255, int(raw[1])))
-                b = max(0, min(255, int(raw[2])))
-                return (r, g, b)
-            except (TypeError, ValueError):
-                return None
-        return None
 
-    # -------------------------------------------------------------- #
-    #  Font loading                                                    #
-    # -------------------------------------------------------------- #
-    @staticmethod
-    def _load_font(size: int, bold: bool = False) -> pygame.font.Font:
-        for name in ("JetBrains Mono", "Consolas", "Menlo", "DejaVu Sans Mono"):
-            try:
-                return pygame.font.SysFont(name, size, bold=bold)
-            except Exception:
-                continue
-        return pygame.font.Font(None, size)
+def angle_lerp(a: float, b: float, t: float) -> float:
+    """Shortest-arc angle interpolation (degrees)."""
+    diff = (b - a) % 360
+    if diff > 180:
+        diff -= 360
+    return (a + diff * t) % 360
 
-    # -------------------------------------------------------------- #
-    #  Decision helpers                                                #
-    # -------------------------------------------------------------- #
-    def _normalize_decision(self, decision: Any) -> str:
-        if decision is None:
-            return "none"
-        if isinstance(decision, Mapping):
-            dec = str(decision.get("decision", "none")).strip().lower()
-        else:
-            dec = str(decision).strip().lower()
-        if dec in {"go", "green", "true", "1", "proceed"}:
-            return "go"
-        if dec in {"stop", "red", "false", "0", "wait", "yield", "slow", "slow_down", "slowdown"}:
-            return "stop"
-        return "none"
 
-    @staticmethod
-    def _extract_confidence(raw_decision: Any, which: str) -> Optional[float]:
-        """Pull a float confidence from a dict like ``{confidence_go: 0.8}``."""
-        if not isinstance(raw_decision, Mapping):
-            return None
-        key = f"confidence_{which}"
-        val = raw_decision.get(key)
-        if val is None:
-            return None
-        try:
-            return float(val)
-        except (TypeError, ValueError):
-            return None
+def interpolate_vehicles(
+    prev: List[Dict[str, Any]],
+    curr: List[Dict[str, Any]],
+    t: float,
+) -> List[Dict[str, Any]]:
+    """Return a new vehicle list with positions lerped from *prev* to *curr*."""
+    if not prev:
+        return curr
+    prev_map = {v["id"]: v for v in prev}
+    result = []
+    for v in curr:
+        p = prev_map.get(v["id"])
+        if p is None:
+            result.append(v)
+            continue
+        out = dict(v)
+        out["x"] = lerp(p["x"], v["x"], t)
+        out["y"] = lerp(p["y"], v["y"], t)
+        out["speed"] = lerp(p["speed"], v["speed"], t)
+        result.append(out)
+    return result
+
+
+# ── Awareness / slow-down ────────────────────────────────────────────────────
+
+def is_approaching(vehicle: Dict[str, Any]) -> bool:
+    """True if the vehicle hasn't yet reached the intersection centre."""
+    x, y = vehicle["x"], vehicle["y"]
+    d = vehicle.get("direction", "").upper()
+    if d == "EAST":  return x < 0
+    if d == "WEST":  return x > 0
+    if d == "NORTH": return y < 0
+    if d == "SOUTH": return y > 0
+    return False
+
+
+def should_slow_down(vehicle: Dict[str, Any], ml_decision: str) -> bool:
+    """
+    Combine awareness-distance rule with ML decision.
+
+    awareness_distance_m = speed_kmh / 5
+    should_slow_down = STOP decision OR (approaching AND within awareness zone)
+    """
+    dist = math.hypot(vehicle["x"], vehicle["y"])
+    awareness = vehicle.get("speed", 0) / AWARENESS_DIVISOR
+    geo_warning = is_approaching(vehicle) and dist <= awareness
+    return ml_decision == "STOP" or geo_warning
+
+
+# ── Alpha drawing helpers ────────────────────────────────────────────────────
+
+def draw_alpha_rect(
+    target: pygame.Surface,
+    color: Tuple[int, ...],
+    rect: pygame.Rect,
+    border_radius: int = 0,
+) -> None:
+    """Draw a semi-transparent rectangle (colour tuple with 4 channels)."""
+    tmp = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
+    pygame.draw.rect(tmp, color, (0, 0, rect.w, rect.h), border_radius=border_radius)
+    target.blit(tmp, rect.topleft)
+
+
+def draw_alpha_circle(
+    target: pygame.Surface,
+    color: Tuple[int, ...],
+    centre: Tuple[int, int],
+    radius: int,
+) -> None:
+    """Draw a semi-transparent circle."""
+    if radius < 1:
+        return
+    size = radius * 2
+    tmp = pygame.Surface((size, size), pygame.SRCALPHA)
+    pygame.draw.circle(tmp, color, (radius, radius), radius)
+    target.blit(tmp, (centre[0] - radius, centre[1] - radius))
+
+
+# ── Text helper ──────────────────────────────────────────────────────────────
+
+def render_text(
+    surface: pygame.Surface,
+    font: pygame.font.Font,
+    text: str,
+    pos: Tuple[int, int],
+    color: Tuple[int, ...] = (230, 230, 235),
+    anchor: str = "topleft",
+) -> pygame.Rect:
+    """Render text with flexible *anchor* ('topleft', 'center', 'midright' …)."""
+    img = font.render(text, True, color)
+    rect = img.get_rect(**{anchor: pos})
+    surface.blit(img, rect)
+    return rect
