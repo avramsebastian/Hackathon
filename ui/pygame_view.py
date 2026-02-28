@@ -70,7 +70,7 @@ class PygameIntersectionView(
         self.paused = False
         self.show_debug = False
         self.show_legend = True
-        self.show_splash = True
+        self.show_splash = False
         self.zoom = 1.0
         self._hud_scroll_offset = 0
         self._conflict_total = 0
