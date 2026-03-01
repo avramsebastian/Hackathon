@@ -212,6 +212,7 @@ def draw_control_bar(
     screen: pygame.Surface,
     paused: bool,
     mouse_pos: Tuple[int, int],
+    vehicle_count: int,
 ) -> List[ButtonRect]:
     """
     Draw the control bar and return a list of :class:`ButtonRect` objects
@@ -242,6 +243,33 @@ def draw_control_bar(
         render_text(screen, _f("sm"), text, rect.center, COLOR_BTN_TEXT, anchor="center")
         buttons.append(ButtonRect(name, bx, by, BTN_W, BTN_H))
         bx += BTN_W + 10
+
+    # Vehicle-count stepper (right side)
+    step_w = 32
+    step_h = BTN_H
+    step_gap = 6
+    vc_label = f"Vehicule: {vehicle_count}"
+    label_w = _f("sm").size(vc_label)[0]
+    total_stepper_w = label_w + 10 + step_w + step_gap + step_w
+    sx = sw - HUD_PAD - total_stepper_w
+    sy = by
+
+    render_text(screen, _f("sm"), vc_label, (sx, sy + step_h // 2), COLOR_HUD_DIM, anchor="midleft")
+
+    minus_x = sx + label_w + 10
+    plus_x = minus_x + step_w + step_gap
+    minus_rect = pygame.Rect(minus_x, sy, step_w, step_h)
+    plus_rect = pygame.Rect(plus_x, sy, step_w, step_h)
+
+    for rect, label, text in (
+        (minus_rect, "veh_minus", "−"),
+        (plus_rect, "veh_plus", "+"),
+    ):
+        hovered = rect.collidepoint(mouse_pos)
+        bg = COLOR_BTN_HOVER if hovered else COLOR_BTN_BG
+        pygame.draw.rect(screen, bg, rect, border_radius=6)
+        render_text(screen, _f("md"), text, rect.center, COLOR_BTN_TEXT, anchor="center")
+        buttons.append(ButtonRect(label, rect.x, rect.y, rect.w, rect.h))
 
     return buttons
 

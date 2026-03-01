@@ -16,6 +16,8 @@ The *bridge* object must expose:
     get_vehicles()           → List[dict]
     get_ml_decision(id: str) → dict   {"decision", …}
     get_intersection()       → dict   {"signs", "lane_count", "box_size"}
+    get_vehicle_count()      → int
+    set_vehicle_count(int)   → None
     is_finished()            → bool
     reset()                  → None
     set_paused(bool)         → None
@@ -128,6 +130,7 @@ def run_pygame_view(
     curr_vehicles: List[Dict[str, Any]] = []
     last_poll = time.time()
     poll_interval = 0.1  # 10 Hz, matching bridge default
+    last_ctrl_click_ts = 0.0
 
     # Panning state
     panning = False
@@ -255,12 +258,17 @@ def run_pygame_view(
             draw_all_vehicles(screen, camera, interp, decisions, frame)
             draw_top_bar(screen, interp, sim_time, paused)
             draw_vehicle_panel(screen, interp, decisions, frame)
-            ctrl_btns = draw_control_bar(screen, paused, mouse_pos)
+            if hasattr(bridge, "get_vehicle_count"):
+                vehicle_count = int(bridge.get_vehicle_count())
+            else:
+                vehicle_count = len(interp)
+            ctrl_btns = draw_control_bar(screen, paused, mouse_pos, vehicle_count)
 
             # Control-bar click handling
-            if pygame.mouse.get_pressed()[0]:
+            if pygame.mouse.get_pressed()[0] and (now - last_ctrl_click_ts) >= 0.16:
                 for btn in ctrl_btns:
                     if btn.contains(*mouse_pos):
+                        last_ctrl_click_ts = now
                         if btn.label == "start":
                             paused = False
                             bridge.set_paused(False)
@@ -278,6 +286,17 @@ def run_pygame_view(
                             prev_vehicles = []
                             curr_vehicles = []
                             _refresh_network_view(reset_camera=True)
+                        elif btn.label == "veh_minus" and hasattr(bridge, "set_vehicle_count"):
+                            bridge.set_vehicle_count(vehicle_count - 1)
+                            sim_time = 0.0
+                            prev_vehicles = []
+                            curr_vehicles = []
+                        elif btn.label == "veh_plus" and hasattr(bridge, "set_vehicle_count"):
+                            bridge.set_vehicle_count(vehicle_count + 1)
+                            sim_time = 0.0
+                            prev_vehicles = []
+                            curr_vehicles = []
+                        break
 
             # Finished overlay
             if bridge.is_finished():

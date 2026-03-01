@@ -251,6 +251,37 @@ class SimBridge:
         """Return (num_intersections, grid_cols, grid_rows)."""
         return self._world.network.get_grid_info()
 
+    def get_vehicle_count(self) -> int:
+        """Return the configured number of vehicles for the scenario."""
+        return int(getattr(self._world, "num_cars", len(self._world.all_cars()) or 0))
+
+    def set_vehicle_count(self, count: int) -> None:
+        """Rebuild the scenario with a new vehicle count (live-adjustable)."""
+        try:
+            requested = int(count)
+        except (TypeError, ValueError):
+            requested = self.get_vehicle_count()
+        requested = max(1, min(30, requested))
+        if requested == self.get_vehicle_count():
+            return
+
+        # Keep the same network and policy; only respawn vehicles.
+        current_network = self._world.network
+        current_policy = self._world.policy
+        current_axis = self._world.priority_axis
+        self._world = World(
+            num_cars=requested,
+            seed=None,
+            policy=current_policy,
+            priority_axis=current_axis,
+            network=current_network,
+        )
+        with self._lock:
+            self._vehicles = []
+            self._decisions = {}
+            self._color_by_id = {}
+        log.info("SimBridge vehicle_count=%d", requested)
+
     def is_finished(self) -> bool:
         """True when all cars have stopped after passing through."""
         return self._world.is_finished()
