@@ -1,157 +1,157 @@
 ==================================================
-         RAPORT TESTARE MODEL V2X AI
+         V2X AI MODEL TEST REPORT
 ==================================================
 
-[Test] Acuratețe pe date noi (Validare): 95.27%
+[Test] Validation accuracy: 93.73%
 
---- DEMONSTRAȚIE COEFICIENȚI (30 scenarii) ---
+--- Confidence breakdown (30 scenarios) ---
 
-Scenariul 1 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 77.4%
- -> Coeficient OPRIRE generat de AI:     22.6%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 1 (true: STOP):
+  GO  confidence: 7.3%
+  STOP confidence: 92.7%
+  Model decision: STOP
 
-Scenariul 2 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 92.9%
- -> Coeficient OPRIRE generat de AI:     7.1%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 2 (true: STOP):
+  GO  confidence: 17.7%
+  STOP confidence: 82.3%
+  Model decision: STOP
 
-Scenariul 3 (Răspunsul corect din trafic era: STOP (Frânează)):
- -> Coeficient ACCELERARE generat de AI: 20.8%
- -> Coeficient OPRIRE generat de AI:     79.2%
- -> Decizie Model: AI-ul alege să OPREASCĂ.
+Scenario 3 (true: GO):
+  GO  confidence: 77.0%
+  STOP confidence: 23.0%
+  Model decision: GO
 
-Scenariul 4 (Răspunsul corect din trafic era: STOP (Frânează)):
- -> Coeficient ACCELERARE generat de AI: 8.7%
- -> Coeficient OPRIRE generat de AI:     91.3%
- -> Decizie Model: AI-ul alege să OPREASCĂ.
+Scenario 4 (true: STOP):
+  GO  confidence: 35.5%
+  STOP confidence: 64.5%
+  Model decision: STOP
 
-Scenariul 5 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 87.8%
- -> Coeficient OPRIRE generat de AI:     12.2%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 5 (true: STOP):
+  GO  confidence: 10.0%
+  STOP confidence: 90.0%
+  Model decision: STOP
 
-Scenariul 6 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 67.2%
- -> Coeficient OPRIRE generat de AI:     32.8%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 6 (true: GO):
+  GO  confidence: 79.5%
+  STOP confidence: 20.5%
+  Model decision: GO
 
-Scenariul 7 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 94.2%
- -> Coeficient OPRIRE generat de AI:     5.8%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 7 (true: GO):
+  GO  confidence: 87.5%
+  STOP confidence: 12.5%
+  Model decision: GO
 
-Scenariul 8 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 83.9%
- -> Coeficient OPRIRE generat de AI:     16.1%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 8 (true: GO):
+  GO  confidence: 85.4%
+  STOP confidence: 14.6%
+  Model decision: GO
 
-Scenariul 9 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 85.4%
- -> Coeficient OPRIRE generat de AI:     14.6%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 9 (true: STOP):
+  GO  confidence: 10.2%
+  STOP confidence: 89.8%
+  Model decision: STOP
 
-Scenariul 10 (Răspunsul corect din trafic era: STOP (Frânează)):
- -> Coeficient ACCELERARE generat de AI: 31.3%
- -> Coeficient OPRIRE generat de AI:     68.7%
- -> Decizie Model: AI-ul alege să OPREASCĂ.
+Scenario 10 (true: GO):
+  GO  confidence: 93.4%
+  STOP confidence: 6.6%
+  Model decision: GO
 
-Scenariul 11 (Răspunsul corect din trafic era: STOP (Frânează)):
- -> Coeficient ACCELERARE generat de AI: 23.4%
- -> Coeficient OPRIRE generat de AI:     76.6%
- -> Decizie Model: AI-ul alege să OPREASCĂ.
+Scenario 11 (true: GO):
+  GO  confidence: 95.0%
+  STOP confidence: 5.0%
+  Model decision: GO
 
-Scenariul 12 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 76.7%
- -> Coeficient OPRIRE generat de AI:     23.3%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 12 (true: GO):
+  GO  confidence: 90.2%
+  STOP confidence: 9.8%
+  Model decision: GO
 
-Scenariul 13 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 91.7%
- -> Coeficient OPRIRE generat de AI:     8.3%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 13 (true: GO):
+  GO  confidence: 82.9%
+  STOP confidence: 17.1%
+  Model decision: GO
 
-Scenariul 14 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 90.6%
- -> Coeficient OPRIRE generat de AI:     9.4%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 14 (true: STOP):
+  GO  confidence: 16.8%
+  STOP confidence: 83.2%
+  Model decision: STOP
 
-Scenariul 15 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 83.1%
- -> Coeficient OPRIRE generat de AI:     16.9%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 15 (true: GO):
+  GO  confidence: 70.3%
+  STOP confidence: 29.7%
+  Model decision: GO
 
-Scenariul 16 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 87.1%
- -> Coeficient OPRIRE generat de AI:     12.9%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 16 (true: GO):
+  GO  confidence: 86.9%
+  STOP confidence: 13.1%
+  Model decision: GO
 
-Scenariul 17 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 75.3%
- -> Coeficient OPRIRE generat de AI:     24.7%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 17 (true: GO):
+  GO  confidence: 91.0%
+  STOP confidence: 9.0%
+  Model decision: GO
 
-Scenariul 18 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 81.5%
- -> Coeficient OPRIRE generat de AI:     18.5%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 18 (true: GO):
+  GO  confidence: 94.1%
+  STOP confidence: 5.9%
+  Model decision: GO
 
-Scenariul 19 (Răspunsul corect din trafic era: STOP (Frânează)):
- -> Coeficient ACCELERARE generat de AI: 27.4%
- -> Coeficient OPRIRE generat de AI:     72.6%
- -> Decizie Model: AI-ul alege să OPREASCĂ.
+Scenario 19 (true: GO):
+  GO  confidence: 86.7%
+  STOP confidence: 13.3%
+  Model decision: GO
 
-Scenariul 20 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 86.6%
- -> Coeficient OPRIRE generat de AI:     13.4%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 20 (true: GO):
+  GO  confidence: 89.9%
+  STOP confidence: 10.1%
+  Model decision: GO
 
-Scenariul 21 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 52.0%
- -> Coeficient OPRIRE generat de AI:     48.0%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 21 (true: STOP):
+  GO  confidence: 10.4%
+  STOP confidence: 89.6%
+  Model decision: STOP
 
-Scenariul 22 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 93.4%
- -> Coeficient OPRIRE generat de AI:     6.6%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 22 (true: STOP):
+  GO  confidence: 15.0%
+  STOP confidence: 85.0%
+  Model decision: STOP
 
-Scenariul 23 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 87.9%
- -> Coeficient OPRIRE generat de AI:     12.1%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 23 (true: GO):
+  GO  confidence: 46.5%
+  STOP confidence: 53.5%
+  Model decision: STOP
 
-Scenariul 24 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 100.0%
- -> Coeficient OPRIRE generat de AI:     0.0%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 24 (true: STOP):
+  GO  confidence: 36.8%
+  STOP confidence: 63.2%
+  Model decision: STOP
 
-Scenariul 25 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 86.2%
- -> Coeficient OPRIRE generat de AI:     13.8%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 25 (true: GO):
+  GO  confidence: 85.2%
+  STOP confidence: 14.8%
+  Model decision: GO
 
-Scenariul 26 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 93.3%
- -> Coeficient OPRIRE generat de AI:     6.7%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 26 (true: GO):
+  GO  confidence: 94.4%
+  STOP confidence: 5.6%
+  Model decision: GO
 
-Scenariul 27 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 100.0%
- -> Coeficient OPRIRE generat de AI:     0.0%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 27 (true: GO):
+  GO  confidence: 65.8%
+  STOP confidence: 34.2%
+  Model decision: GO
 
-Scenariul 28 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 87.3%
- -> Coeficient OPRIRE generat de AI:     12.7%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 28 (true: STOP):
+  GO  confidence: 12.2%
+  STOP confidence: 87.8%
+  Model decision: STOP
 
-Scenariul 29 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 92.7%
- -> Coeficient OPRIRE generat de AI:     7.3%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 29 (true: GO):
+  GO  confidence: 79.0%
+  STOP confidence: 21.0%
+  Model decision: GO
 
-Scenariul 30 (Răspunsul corect din trafic era: GO (Accelerează)):
- -> Coeficient ACCELERARE generat de AI: 98.4%
- -> Coeficient OPRIRE generat de AI:     1.6%
- -> Decizie Model: AI-ul alege să MEARGĂ.
+Scenario 30 (true: GO):
+  GO  confidence: 94.3%
+  STOP confidence: 5.7%
+  Model decision: GO
