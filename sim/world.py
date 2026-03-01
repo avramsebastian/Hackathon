@@ -545,6 +545,11 @@ class World:
                 return False
         return True
 
+    def _car_in_intersection(self, car: Car) -> bool:
+        """True when the car is physically inside the intersection box."""
+        half = self.policy.intersection_box_half_m
+        return abs(car.x) < half and abs(car.y) < half
+
     def _distance_to_stop_line(self, car: Car) -> float:
         """Distance from car to its stop line along the travel axis.
 
@@ -641,6 +646,10 @@ class World:
                     else:
                         target = max(target, car.cruise_speed)
 
+            # ── Intersection box speed cap ───────────────────────────────
+            if self._car_in_intersection(car) and not car.passed:
+                target = min(target, self.policy.intersection_speed_cap_kmh)
+
             targets[car.id] = target
         return targets
 
@@ -728,6 +737,15 @@ class World:
                         # Very close — hard stop.
                         new_target = 0.0
                         xreason = "VERY CLOSE hard stop"
+
+                        # ── Backtrack: nudge the yielder backward when
+                        #    dangerously close inside the intersection.
+                        yielder_in_box = self._car_in_intersection(yielder)
+                        if yielder_in_box and now_dist < safe_dist * 0.5:
+                            bt = self.policy.intersection_backtrack_m
+                            yielder.x -= yielder.vx * bt
+                            yielder.y -= yielder.vy * bt
+                            xreason = f"BACKTRACK {bt:.1f}m"
                     elif yielder_outside and dist_to_line < 3.0:
                         # Near the stop line — hard stop to prevent creeping in.
                         new_target = 0.0
@@ -738,8 +756,17 @@ class World:
                         new_target = min(current, ratio * yielder.cruise_speed)
                         xreason = f"RAMP ratio={ratio:.2f}"
                     else:
-                        new_target = min(current, self.policy.collision_guard_soft_speed_kmh)
-                        xreason = "SOFT CAP"
+                        # Yielder already inside the intersection.
+                        other = b if yielder is a else a
+                        both_in_box = (self._car_in_intersection(yielder)
+                                       and self._car_in_intersection(other))
+                        if both_in_box and now_dist < safe_dist * 1.2:
+                            # Both in the box and close — hard stop yielder
+                            new_target = 0.0
+                            xreason = "IN-BOX CONFLICT hard stop"
+                        else:
+                            new_target = min(current, self.policy.collision_guard_soft_speed_kmh)
+                            xreason = "SOFT CAP"
 
                     if new_target < current:
                         targets[yielder.id] = new_target

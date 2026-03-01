@@ -353,14 +353,14 @@ def _draw_single_light(
     screen: pygame.Surface, cam: Camera, sx: int, sy: int, phase: str
 ) -> None:
     """Draw one 3-bulb vertical traffic light at screen pos (sx, sy)."""
-    bulb_r = max(3, int(1.8 * cam.zoom))
-    spacing = int(bulb_r * 2.4)
-    housing_w = bulb_r * 2 + max(2, int(cam.zoom * 0.6))
-    housing_h = spacing * 2 + bulb_r * 2 + max(2, int(cam.zoom * 0.6))
+    bulb_r = max(2, int(1.0 * cam.zoom))
+    spacing = int(bulb_r * 2.3)
+    housing_w = bulb_r * 2 + max(1, int(cam.zoom * 0.4))
+    housing_h = spacing * 2 + bulb_r * 2 + max(1, int(cam.zoom * 0.4))
 
     # Pole
-    pole_h = int(bulb_r * 3)
-    pw = max(1, int(cam.zoom * 0.45))
+    pole_h = int(bulb_r * 2.5)
+    pw = max(1, int(cam.zoom * 0.35))
     pygame.draw.line(screen, COLOR_SIGN_POLE, (sx, sy + housing_h // 2),
                      (sx, sy + housing_h // 2 + pole_h), pw)
 

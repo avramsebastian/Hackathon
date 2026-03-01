@@ -62,6 +62,16 @@ class SafetyPolicy:
     speed_limit_kmh: float = 84.0
     """Posted speed limit for scoring and spawn range."""
 
+    # ── Intersection box behaviour ─────────────────────────────────────────
+    intersection_box_half_m: float = 10.0
+    """Half-width of the intersection box (matches ROAD_HALF_W)."""
+
+    intersection_speed_cap_kmh: float = 30.0
+    """Maximum speed inside the intersection box."""
+
+    intersection_backtrack_m: float = 1.5
+    """Distance a yielding car reverses when too close inside the box."""
+
     # ── Safety envelope ───────────────────────────────────────────────────
     base_collision_radius_m: float = 2.2
     """Minimum physical clearance around each vehicle."""
