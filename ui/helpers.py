@@ -63,6 +63,10 @@ def interpolate_vehicles(
         out["x"] = lerp(p["x"], v["x"], t)
         out["y"] = lerp(p["y"], v["y"], t)
         out["speed"] = lerp(p["speed"], v["speed"], t)
+        # Interpolate velocity direction for smooth visual rotation.
+        if "vx" in v and "vx" in p:
+            out["vx"] = lerp(p["vx"], v["vx"], t)
+            out["vy"] = lerp(p["vy"], v["vy"], t)
         result.append(out)
     return result
 

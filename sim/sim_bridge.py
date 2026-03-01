@@ -281,6 +281,8 @@ class SimBridge:
             "speed": car.speed,
             "speed_unit": _SPEED_UNIT,
             "direction": _cardinal_direction(car),
+            "vx": car.vx,
+            "vy": car.vy,
             "approach": car.approach,
             "role": car.role,
             "priority_score": danger_score(car, self._world.policy),

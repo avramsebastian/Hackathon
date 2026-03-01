@@ -43,29 +43,65 @@ _OTHER_AXIS: Dict[str, str] = {"EW": "NS", "NS": "EW"}
 
 # ── Turn waypoints: (approach, ml_direction) → list of (x, y) waypoints ──────
 # Cars follow these waypoints through the intersection for smooth turns.
-# The last waypoint sets the exit heading; intermediate points shape the curve.
+# Waypoints are sampled along circular arcs so heading changes gradually.
 _L: float = 7.0   # Must stay in sync with SafetyPolicy.lane_offset_m
 
+_ARC_RIGHT_R: float = 2.0   # turn radius for right turns (metres)
+_ARC_LEFT_R:  float = 10.0  # turn radius for left turns  (metres)
+_ARC_N: int = 8             # sample points per arc
+
+
+def _arc(cx: float, cy: float, r: float,
+         t0: float, t1: float, n: int) -> List[Tuple[float, float]]:
+    """Return *n* evenly-spaced points on a circular arc."""
+    return [(cx + r * math.cos(t0 + (t1 - t0) * i / (n - 1)),
+             cy + r * math.sin(t0 + (t1 - t0) * i / (n - 1)))
+            for i in range(n)]
+
+
 _TURN_WAYPOINTS: Dict[Tuple[str, str], List[Tuple[float, float]]] = {
-    # From W approach (eastbound at y = -L)
-    ("W", "RIGHT"): [(-_L, -_L), (-_L, -_L - 15)],
-    ("W", "LEFT"):  [(0.0, -_L + 3), (3.0, 0.0), (_L, 4.0), (_L, 15.0)],
-    # From E approach (westbound at y = +L)
-    ("E", "RIGHT"): [(_L, _L), (_L, _L + 15)],
-    ("E", "LEFT"):  [(0.0, _L - 3), (-3.0, 0.0), (-_L, -4.0), (-_L, -15.0)],
-    # From N approach (southbound at x = -L)
-    ("N", "RIGHT"): [(-_L, _L), (-_L - 15, _L)],
-    ("N", "LEFT"):  [(-_L + 3, 0.0), (0.0, -3.0), (4.0, -_L), (15.0, -_L)],
-    # From S approach (northbound at x = +L)
-    ("S", "RIGHT"): [(_L, -_L), (_L + 15, -_L)],
-    ("S", "LEFT"):  [(_L - 3, 0.0), (0.0, 3.0), (-4.0, _L), (-15.0, _L)],
+    # ── RIGHT turns (tight 90° CW arcs, r = _ARC_RIGHT_R) ────────────────
+    # W RIGHT: east → south  (centre at (-L-r, -L-r))
+    ("W", "RIGHT"): _arc(-_L - _ARC_RIGHT_R, -_L - _ARC_RIGHT_R,
+                         _ARC_RIGHT_R, math.pi / 2, 0, _ARC_N)
+                     + [(-_L, -_L - 15)],
+    # E RIGHT: west → north  (centre at (L+r, L+r))
+    ("E", "RIGHT"): _arc(_L + _ARC_RIGHT_R, _L + _ARC_RIGHT_R,
+                         _ARC_RIGHT_R, -math.pi / 2, -math.pi, _ARC_N)
+                     + [(_L, _L + 15)],
+    # N RIGHT: south → west  (centre at (-L-r, L+r))
+    ("N", "RIGHT"): _arc(-_L - _ARC_RIGHT_R, _L + _ARC_RIGHT_R,
+                         _ARC_RIGHT_R, 0, -math.pi / 2, _ARC_N)
+                     + [(-_L - 15, _L)],
+    # S RIGHT: north → east  (centre at (L+r, -L-r))
+    ("S", "RIGHT"): _arc(_L + _ARC_RIGHT_R, -_L - _ARC_RIGHT_R,
+                         _ARC_RIGHT_R, math.pi, math.pi / 2, _ARC_N)
+                     + [(_L + 15, -_L)],
+
+    # ── LEFT turns (wide 90° CCW arcs, r = _ARC_LEFT_R) ──────────────────
+    # W LEFT: east → north  (centre at (L-r, -L+r))
+    ("W", "LEFT"): _arc(_L - _ARC_LEFT_R, -_L + _ARC_LEFT_R,
+                        _ARC_LEFT_R, -math.pi / 2, 0, _ARC_N)
+                    + [(_L, 15.0)],
+    # E LEFT: west → south  (centre at (-L+r, L-r))
+    ("E", "LEFT"): _arc(-_L + _ARC_LEFT_R, _L - _ARC_LEFT_R,
+                        _ARC_LEFT_R, math.pi / 2, math.pi, _ARC_N)
+                    + [(-_L, -15.0)],
+    # N LEFT: south → east  (centre at (-L+r, -L+r))
+    ("N", "LEFT"): _arc(-_L + _ARC_LEFT_R, -_L + _ARC_LEFT_R,
+                        _ARC_LEFT_R, math.pi, 3 * math.pi / 2, _ARC_N)
+                    + [(15.0, -_L)],
+    # S LEFT: north → west  (centre at (L-r, L-r))
+    ("S", "LEFT"): _arc(_L - _ARC_LEFT_R, _L - _ARC_LEFT_R,
+                        _ARC_LEFT_R, 0, math.pi / 2, _ARC_N)
+                    + [(-15.0, _L)],
 }
 
 # How far from centre (along travel axis) the car begins following waypoints.
-# Right turns start earlier (near the intersection corner); lefts start later.
+# Right turns start earlier to accommodate the arc onset; lefts closer in.
 _TURN_TRIGGER: Dict[str, float] = {
-    "RIGHT": _L + 1.0,   # ~8 m — near the intersection corner
-    "LEFT":  4.0,        # ~4 m — closer to the centre
+    "RIGHT": _L + _ARC_RIGHT_R + 1.0,  # ~10 m — arc entry + 1 m run-in
+    "LEFT":  4.0,                       # ~4 m — closer to the centre
 }
 
 
@@ -403,17 +439,8 @@ class World:
         if self.policy.world_overlap_resolver_enabled:
             self.collision_resolutions += self._resolve_overlaps()
 
-        all_passed = all(c.passed for c in self.cars)
-        if all_passed:
-            for car in self.cars:
-                if car.stopped:
-                    continue
-                car.speed = max(0.0, car.speed - self.policy.coast_decel_kmh_s * dt)
-                if car.speed < 0.5:
-                    car.speed = 0.0
-                    car.stopped = True
-
-        if all(c.stopped for c in self.cars):
+        # Mark simulation finished once every car has passed through.
+        if all(c.passed for c in self.cars):
             self._finished = True
 
     # ── Legacy compatibility ──────────────────────────────────────────────

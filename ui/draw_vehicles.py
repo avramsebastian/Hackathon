@@ -114,7 +114,13 @@ def _draw_vehicle(
     Draw a top-down car polygon rotated by heading, with headlights.
     The base shape points EAST (heading 0°).
     """
-    heading = direction_to_heading(vehicle.get("direction", "EAST"))
+    # Compute heading from actual velocity vector for smooth rotation.
+    vx = vehicle.get("vx", 0.0)
+    vy = vehicle.get("vy", 0.0)
+    if abs(vx) > 1e-6 or abs(vy) > 1e-6:
+        heading = math.degrees(math.atan2(vy, vx))   # 0=East, CCW positive
+    else:
+        heading = direction_to_heading(vehicle.get("direction", "EAST"))
     color = _get_color(vehicle)
     sx, sy = cam.world_to_screen(vehicle["x"], vehicle["y"])
 
