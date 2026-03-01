@@ -426,13 +426,20 @@ class World:
                 dist = self._distance_to_stop_line(car)
                 dec = decisions.get(car.id, {})
                 ml_dec = dec.get("decision", "?")
+                node = self.network.intersections.get(car.current_int_id)
+                cx = node.cx if node else 0.0
+                cy = node.cy if node else 0.0
+                rx, ry = car.x - cx, car.y - cy
                 log.debug(
-                    "  %s  pos=(%.1f,%.1f) spd=%.1f cruise=%.1f "
-                    "sign=%s dist_line=%.1f passed=%s stopped=%s "
-                    "stop_wait=%.2f stop_done=%s ml=%s target=%.1f",
-                    car.id, car.x, car.y, car.speed, car.cruise_speed,
-                    sign, dist, car.passed, car.stopped,
-                    car.stop_wait_s, car.stop_completed, ml_dec,
+                    "  %s  pos=(%.1f,%.1f) v=(%.1f,%.1f) int=%s ctr=(%.0f,%.0f) rel=(%.1f,%.1f) "
+                    "app=%s ml_dir=%s spd=%.1f cruise=%.1f "
+                    "sign=%s dist_line=%.1f passed=%s turning=%s has_turned=%s "
+                    "stopped=%s stop_wait=%.2f stop_done=%s ml=%s target=%.1f",
+                    car.id, car.x, car.y, car.vx, car.vy,
+                    car.current_int_id, cx, cy, rx, ry,
+                    car.approach, car.ml_direction, car.speed, car.cruise_speed,
+                    sign, dist, car.passed, car.is_turning, car.has_turned,
+                    car.stopped, car.stop_wait_s, car.stop_completed, ml_dec,
                     targets.get(car.id, -1),
                 )
 
@@ -454,13 +461,19 @@ class World:
             node = self.network.intersections.get(car.current_int_id)
             cx = node.cx if node else 0.0
             cy = node.cy if node else 0.0
-            if not car.passed and not car.is_turning and car.has_passed(
-                self.policy.pass_threshold_m, cx, cy
-            ):
+            threshold = self.policy.pass_threshold_m
+            actually_passed = car.has_passed(threshold, cx, cy)
+            if not car.passed and not car.is_turning and actually_passed:
                 # Check if car should transition to next intersection
                 next_int = self._next_intersection_for(car)
+                exit_arm = self._exit_arm(car)
+                log.debug(
+                    "  TRANSITION CHECK %s: exit_arm=%s next_int=%s",
+                    car.id, exit_arm, next_int.id if next_int else None,
+                )
                 if next_int is not None:
                     # Transition: reset per-intersection state for the new target
+                    old_int = car.current_int_id
                     car.current_int_id = next_int.id
                     # Determine the arrival arm from the road connection
                     new_approach = self._arrival_arm(car, next_int)
@@ -471,6 +484,10 @@ class World:
                     car.stop_wait_s = 0.0
                     # Pick a new random direction for the next intersection
                     car.ml_direction = self._rng.choice(_ML_DIRECTIONS)
+                    log.debug(
+                        "  TRANSITION %s: %s -> %s new_app=%s ml_dir=%s",
+                        car.id, old_int, next_int.id, new_approach, car.ml_direction,
+                    )
                 else:
                     car.passed = True
             # Clear leftover waypoints once a car has passed through so
