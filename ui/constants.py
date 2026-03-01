@@ -23,6 +23,13 @@ COLOR_PRIORITY_YELLOW = (255, 210, 0)
 COLOR_PRIORITY_WHITE  = (255, 255, 255)
 COLOR_SIGN_POLE       = (110, 110, 110)
 
+# ── Traffic light (semaphore) colours ─────────────────────────────────────────
+COLOR_LIGHT_RED       = (220, 40, 40)
+COLOR_LIGHT_YELLOW    = (240, 200, 40)
+COLOR_LIGHT_GREEN     = (40, 200, 60)
+COLOR_LIGHT_OFF       = (60, 60, 60)
+COLOR_LIGHT_HOUSING   = (35, 35, 40)
+
 # ── Decoration colours ────────────────────────────────────────────────────────
 COLOR_TREE_TRUNK      = (139, 90, 60)
 COLOR_TREE_CANOPY_A   = (62, 145, 62)

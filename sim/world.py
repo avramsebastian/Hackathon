@@ -29,6 +29,18 @@ log = logging.getLogger("world")
 _ML_DIRECTIONS: Tuple[str, ...] = ("FORWARD", "LEFT", "RIGHT")
 _APPROACHES: Tuple[str, ...] = ("W", "N", "E", "S")
 
+# Semaphore phase names
+_PHASE_GREEN  = "GREEN"
+_PHASE_YELLOW = "YELLOW"
+_PHASE_RED    = "RED"
+
+# Which approaches share a green phase
+_AXIS_APPROACHES: Dict[str, Tuple[str, ...]] = {
+    "EW": ("E", "W"),
+    "NS": ("N", "S"),
+}
+_OTHER_AXIS: Dict[str, str] = {"EW": "NS", "NS": "EW"}
+
 # ── Turn waypoints: (approach, ml_direction) → list of (x, y) waypoints ──────
 # Cars follow these waypoints through the intersection for smooth turns.
 # The last waypoint sets the exit heading; intermediate points shape the curve.
@@ -193,13 +205,15 @@ class Car:
             "role": self.role,
         }
 
-    def ml_payload(self, sign: str, others: Sequence["Car"]) -> Dict[str, Any]:
+    def ml_payload(self, sign: str, others: Sequence["Car"],
+                   traffic_light: str = "NONE") -> Dict[str, Any]:
         """Build the JSON-compatible dict expected by
         :func:`ml.comunication.Inference.fa_inferenta_din_json`.
         """
         return {
             "my_car": self.as_dict(),
             "sign": sign,
+            "traffic_light": traffic_light,
             "traffic": [car.as_dict() for car in others if car.id != self.id],
         }
 
@@ -273,6 +287,12 @@ class World:
         self.green_approach: str = "W"
         self._green_ttl_s: float = 0.0
         self._tick_count: int = 0
+
+        # ── Semaphore state ─────────────────────────────────────────────
+        self._sem_green_axis: str = "EW"        # which axis currently has green
+        self._sem_phase: str = _PHASE_GREEN      # current phase for the green axis
+        self._sem_timer: float = self.policy.semaphore_green_s
+
         self._init_cars()
 
     # ── initialisation / reset ────────────────────────────────────────────
@@ -285,6 +305,9 @@ class World:
         self.collision_resolutions = 0
         self.green_approach = "W"
         self._green_ttl_s = 0.0
+        self._sem_green_axis = "EW"
+        self._sem_phase = _PHASE_GREEN
+        self._sem_timer = self.policy.semaphore_green_s
         self._finished = False
 
     def reset(self) -> None:
@@ -326,6 +349,8 @@ class World:
         tick = self._tick_count
         if self.policy.world_signal_scheduler_enabled:
             self._update_virtual_signal(dt)
+        if self.policy.semaphore_enabled:
+            self._update_semaphore(dt)
 
         targets = self._build_target_speeds(decisions, dt)
 
@@ -419,7 +444,7 @@ class World:
         distance from already spawned cars.
         """
         approach = self._rng.choice(_APPROACHES)
-        speed = self._rng.uniform(36.0, self.policy.speed_limit_kmh + 8.0)
+        speed = self._rng.uniform(60.0, self.policy.speed_limit_kmh + 10.0)
         ml_direction = self._rng.choice(_ML_DIRECTIONS)
         role = self._rng.choices(
             ("civilian", "ambulance", "police"),
@@ -557,49 +582,64 @@ class World:
                 else:
                     target = min(target, self.policy.red_soft_speed_kmh)
 
-            # ── Stop / Yield enforcement ──────────────────────────────
-            sign = self.sign_for_car(car)
-            required_wait = 0.0
-            if sign == "STOP":
-                required_wait = self.policy.stop_sign_wait_s     # 0.2 s
-            elif sign == "YIELD":
-                required_wait = self.policy.stop_sign_wait_s * 0.5  # 0.1 s
-
-            if required_wait > 0.0 and not car.passed:
-                if not car.stop_completed:
+            # ── Semaphore enforcement (overrides signs when enabled) ─────
+            if self.policy.semaphore_enabled and not car.passed:
+                sem_color = self.semaphore_color_for_approach(car.approach)
+                if sem_color in (_PHASE_RED, _PHASE_YELLOW):
                     dist_to_line = self._distance_to_stop_line(car)
-
-                    if dist_to_line > self.policy.stop_brake_zone_m:
-                        # Still far from the stop line → keep driving at cruise
-                        # regardless of ML STOP so the car doesn't freeze far away.
+                    if dist_to_line > self.policy.semaphore_brake_zone_m:
+                        # Far away — cruise normally
                         target = max(target, car.cruise_speed)
-
                     elif dist_to_line > 0.0:
-                        # ---------- smoothly ramp to 0 at the stop line ----------
-                        # Linear proportion of the brake zone already covered.
-                        ratio = dist_to_line / self.policy.stop_brake_zone_m
+                        ratio = dist_to_line / self.policy.semaphore_brake_zone_m
                         approach_target = ratio * car.cruise_speed
-                        # Take the SLOWER of the sign-based ramp and the ML target
-                        # so that ML STOP is honoured within the brake zone.
                         target = min(target, approach_target)
-
-                        if car.speed < 1.0:
-                            car.stop_wait_s += dt
-                        if car.stop_wait_s >= required_wait:
-                            car.stop_completed = True
-
-                    else:
-                        # Car reached or slightly overshot the stop line.
-                        # Keep it at 0 and keep accumulating wait time.
+                    elif dist_to_line > -2.0:
+                        # Just reached the stop line — hold here
                         target = 0.0
-                        if car.speed < 1.0:
-                            car.stop_wait_s += dt
-                        if car.stop_wait_s >= required_wait:
-                            car.stop_completed = True
-                else:
-                    # Mandatory stop fulfilled → proceed through at cruise speed
-                    # even if ML still says STOP.
+                    else:
+                        # Already well past the line (committed) — let it through
+                        target = max(target, car.cruise_speed)
+                elif sem_color == _PHASE_GREEN:
+                    # Green → drive through, override any lingering ML STOP
                     target = max(target, car.cruise_speed)
+                    # Also mark stop_completed so sign logic doesn't re-apply
+                    car.stop_completed = True
+
+            # ── Stop / Yield enforcement (signs – only when semaphore off) ─
+            elif not self.policy.semaphore_enabled:
+                sign = self.sign_for_car(car)
+                required_wait = 0.0
+                if sign == "STOP":
+                    required_wait = self.policy.stop_sign_wait_s     # 0.2 s
+                elif sign == "YIELD":
+                    required_wait = self.policy.stop_sign_wait_s * 0.5  # 0.1 s
+
+                if required_wait > 0.0 and not car.passed:
+                    if not car.stop_completed:
+                        dist_to_line = self._distance_to_stop_line(car)
+
+                        if dist_to_line > self.policy.stop_brake_zone_m:
+                            target = max(target, car.cruise_speed)
+
+                        elif dist_to_line > 0.0:
+                            ratio = dist_to_line / self.policy.stop_brake_zone_m
+                            approach_target = ratio * car.cruise_speed
+                            target = min(target, approach_target)
+
+                            if car.speed < 1.0:
+                                car.stop_wait_s += dt
+                            if car.stop_wait_s >= required_wait:
+                                car.stop_completed = True
+
+                        else:
+                            target = 0.0
+                            if car.speed < 1.0:
+                                car.stop_wait_s += dt
+                            if car.stop_wait_s >= required_wait:
+                                car.stop_completed = True
+                    else:
+                        target = max(target, car.cruise_speed)
 
             targets[car.id] = target
         return targets
@@ -629,11 +669,21 @@ class World:
     def _apply_speed_targets(self, targets: Dict[str, float], dt: float) -> None:
         for car in self.cars:
             target = max(0.0, float(targets.get(car.id, car.cruise_speed)))
+
+            # Choose acceleration rate: use green-launch boost when
+            # accelerating from near-standstill toward a high target.
+            accel = self.policy.max_accel_kmh_s
+            if (target >= car.cruise_speed * 0.8
+                    and car.speed < self.policy.creep_filter_kmh * 2):
+                accel = self.policy.green_launch_accel_kmh_s
+
             if car.speed > target:
                 car.speed = max(target, car.speed - self.policy.max_brake_kmh_s * dt)
             elif car.speed < target:
-                car.speed = min(target, car.speed + self.policy.max_accel_kmh_s * dt)
-            if car.speed < 0.5:
+                car.speed = min(target, car.speed + accel * dt)
+
+            # Anti-creep filter: snap very low speeds to zero
+            if car.speed < self.policy.creep_filter_kmh and target < self.policy.creep_filter_kmh:
                 car.speed = 0.0
 
             if car.speed < 1.0:
@@ -786,19 +836,25 @@ class World:
         # Check multiple time steps so perpendicular approaches that
         # converge on the intersection centre don't slip through a
         # single-snapshot check.
-        va = max(0.0, targets.get(a.id, a.speed)) / 3.6
-        vb = max(0.0, targets.get(b.id, b.speed)) / 3.6
-        horizon = max(dt, self.policy.horizon_s)
-        steps = 4
-        step_dt = horizon / steps
-        for k in range(1, steps + 1):
-            t = step_dt * k
-            ax = a.x + a.vx * va * t
-            ay = a.y + a.vy * va * t
-            bx = b.x + b.vx * vb * t
-            by = b.y + b.vy * vb * t
-            if math.hypot(ax - bx, ay - by) <= safe_dist:
-                return True
+        # When the semaphore is active, skip projection for
+        # perpendicular pairs — the traffic light already separates
+        # conflicting phases and the projection would wrongly block
+        # green-phase cars from launching.
+        perpendicular = (a.vx != 0) != (b.vx != 0)
+        if not (perpendicular and self.policy.semaphore_enabled):
+            va = max(0.0, targets.get(a.id, a.speed)) / 3.6
+            vb = max(0.0, targets.get(b.id, b.speed)) / 3.6
+            horizon = max(dt, self.policy.horizon_s)
+            steps = 4
+            step_dt = horizon / steps
+            for k in range(1, steps + 1):
+                t = step_dt * k
+                ax = a.x + a.vx * va * t
+                ay = a.y + a.vy * va * t
+                bx = b.x + b.vx * vb * t
+                by = b.y + b.vy * vb * t
+                if math.hypot(ax - bx, ay - by) <= safe_dist:
+                    return True
 
         # ── Intersection-zone conflict for perpendicular approaches ──
         # If both cars are heading into the intersection from different
@@ -806,7 +862,9 @@ class World:
         # horizon, they *will* conflict at the centre even if the
         # swept check above missed it (e.g. they arrive at slightly
         # different times and the step granularity skipped the overlap).
-        if not (a.passed or b.passed):
+        # SKIP this check when the semaphore is active — the traffic
+        # light already separates the conflicting phases.
+        if not (a.passed or b.passed) and not self.policy.semaphore_enabled:
             da = self._distance_to_stop_line(a)
             db = self._distance_to_stop_line(b)
             perpendicular = (a.vx != 0) != (b.vx != 0)  # one horizontal, one vertical
@@ -863,6 +921,24 @@ class World:
         if sa != sb:
             return a if sa < sb else b
 
+        # ── Right-of-way inside the intersection ─────────────────────
+        # (a) Left-turning car yields to oncoming straight/right car.
+        a_turning_left = (a.ml_direction == "LEFT" and a.is_turning)
+        b_turning_left = (b.ml_direction == "LEFT" and b.is_turning)
+        if a_turning_left and not b_turning_left:
+            return a
+        if b_turning_left and not a_turning_left:
+            return b
+        # (b) Right-hand priority: the car that has the other on its
+        #     right side must yield.  We use the cross product of the
+        #     two velocity vectors to determine relative side.
+        if a.vx != b.vx or a.vy != b.vy:
+            cross = a.vx * b.vy - a.vy * b.vx
+            if cross > 0:      # b is to a's right → a yields
+                return a
+            elif cross < 0:    # a is to b's right → b yields
+                return b
+
         # Priority scheduler: lower-priority car yields.
         pa = danger_score(a, self.policy)
         pb = danger_score(b, self.policy)
@@ -877,6 +953,55 @@ class World:
 
         # Stable tie-breaker.
         return a if a.id > b.id else b
+
+    # ── Semaphore (fixed-cycle traffic lights) ──────────────────────────
+
+    def _update_semaphore(self, dt: float) -> None:
+        """Advance the fixed-cycle semaphore state machine."""
+        self._sem_timer -= dt
+        if self._sem_timer > 0.0:
+            return
+
+        if self._sem_phase == _PHASE_GREEN:
+            # green → yellow
+            self._sem_phase = _PHASE_YELLOW
+            self._sem_timer = self.policy.semaphore_yellow_s
+        elif self._sem_phase == _PHASE_YELLOW:
+            # yellow → red (all-red clearance for both axes)
+            self._sem_phase = _PHASE_RED
+            self._sem_timer = self.policy.semaphore_red_clearance_s
+        else:
+            # red clearance done → switch axis, new green
+            other = "NS" if self._sem_green_axis == "EW" else "EW"
+            self._sem_green_axis = other
+            self._sem_phase = _PHASE_GREEN
+            self._sem_timer = self.policy.semaphore_green_s
+
+    def semaphore_color_for_approach(self, approach: str) -> str:
+        """Return 'GREEN', 'YELLOW', or 'RED' for the given approach."""
+        if not self.policy.semaphore_enabled:
+            return "GREEN"  # semaphore off → everyone treated as green
+        axis_for_approach = {
+            "N": "NS", "S": "NS",
+            "E": "EW", "W": "EW",
+        }
+        car_axis = axis_for_approach.get(approach, "EW")
+        if car_axis == self._sem_green_axis:
+            return self._sem_phase  # GREEN, YELLOW, or RED (clearance)
+        else:
+            return _PHASE_RED
+
+    def semaphore_state(self) -> Dict[str, Any]:
+        """Return full semaphore state dict (for UI / bus)."""
+        return {
+            "enabled": self.policy.semaphore_enabled,
+            "green_axis": self._sem_green_axis,
+            "phase": self._sem_phase,
+            "timer": round(self._sem_timer, 1),
+            "colors": {
+                a: self.semaphore_color_for_approach(a) for a in _APPROACHES
+            },
+        }
 
     def _must_yield_to_signal(self, car: Car) -> bool:
         if car.passed:

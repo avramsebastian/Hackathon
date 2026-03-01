@@ -36,24 +36,30 @@ class SafetyPolicy:
     """Distance past the origin at which a car is considered *through*."""
 
     # ── Longitudinal control ──────────────────────────────────────────────
-    coast_decel_kmh_s: float = 60.0
+    coast_decel_kmh_s: float = 120.0
     """Deceleration (km/h per s) applied after all cars have passed."""
 
-    max_accel_kmh_s: float = 30.0
+    max_accel_kmh_s: float = 60.0
     """Maximum acceleration rate (km/h per s)."""
 
-    max_brake_kmh_s: float = 90.0
+    max_brake_kmh_s: float = 180.0
     """Maximum braking rate (km/h per s)."""
+
+    green_launch_accel_kmh_s: float = 120.0
+    """Aggressive acceleration when launching from a green light with clear road."""
+
+    creep_filter_kmh: float = 3.0
+    """Speeds below this threshold are snapped to zero (anti-creep filter)."""
 
     # ── ML-first longitudinal control ─────────────────────────────────────
     ml_stop_target_speed_kmh: float = 0.0
     """Target speed when the ML model says STOP (no explicit target)."""
 
-    ml_max_target_speed_kmh: float = 60.0
+    ml_max_target_speed_kmh: float = 120.0
     """Hard clamp on any explicit ``target_speed_kmh`` from ML."""
 
     # ── Priority / speed limit ────────────────────────────────────────────
-    speed_limit_kmh: float = 42.0
+    speed_limit_kmh: float = 84.0
     """Posted speed limit for scoring and spawn range."""
 
     # ── Safety envelope ───────────────────────────────────────────────────
@@ -76,11 +82,11 @@ class SafetyPolicy:
     stop_sign_wait_s: float = 0.2
     """Mandatory stop duration at a STOP sign (seconds)."""
 
-    stop_line_offset_m: float = 12.0
+    stop_line_offset_m: float = 10.5
     """Distance from the intersection centre to the stop line.
 
-    Must match the sign rendering position in ``ui/draw_road.py``
-    (``ROAD_HALF_W + 2.0 = 12.0``).
+    Must be close to ``ROAD_HALF_W`` so cars stop near the
+    traffic-light / sign rendering position.
     """
 
     stop_brake_zone_m: float = 25.0
@@ -127,6 +133,25 @@ class SafetyPolicy:
 
     spawn_max_attempts: int = 300
     """Random-placement attempts before deterministic fallback."""
+
+    # ── Semaphore (traffic light) ─────────────────────────────────────────
+    semaphore_enabled: bool = True
+    """Enable traffic-light control; overrides sign-based enforcement."""
+
+    semaphore_green_s: float = 8.0
+    """Duration of the green phase per axis (seconds)."""
+
+    semaphore_yellow_s: float = 2.0
+    """Duration of the yellow phase (seconds)."""
+
+    semaphore_red_clearance_s: float = 1.0
+    """All-red clearance interval between phases (seconds)."""
+
+    semaphore_brake_zone_m: float = 30.0
+    """Distance before stop line at which a red/yellow light triggers braking."""
+
+    semaphore_stop_line_m: float = 10.5
+    """Distance of the semaphore stop line from intersection centre."""
 
 
 _ROLE_WEIGHT = {

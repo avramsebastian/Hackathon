@@ -25,6 +25,8 @@ from ui.constants import (
     COLOR_TREE_TRUNK, COLOR_TREE_CANOPY_A, COLOR_TREE_CANOPY_B,
     COLOR_HOUSE_WALL, COLOR_HOUSE_ROOF_A, COLOR_HOUSE_ROOF_B,
     COLOR_HOUSE_DOOR, COLOR_HOUSE_WINDOW,
+    COLOR_LIGHT_RED, COLOR_LIGHT_YELLOW, COLOR_LIGHT_GREEN,
+    COLOR_LIGHT_OFF, COLOR_LIGHT_HOUSING,
     ROAD_HALF_W, SIDEWALK_W, ROAD_LENGTH, LANE_WIDTH_M,
     DASH_LEN, DASH_GAP,
 )
@@ -83,7 +85,11 @@ def draw_map(
     _draw_lane_markings(screen, camera)
     _draw_edge_lines(screen, camera)
     _draw_decorations(screen, camera)
-    _draw_signs(screen, camera, intersection)
+    sem = intersection.get("semaphore", {})
+    if sem.get("enabled", False):
+        _draw_semaphores(screen, camera, sem)
+    else:
+        _draw_signs(screen, camera, intersection)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -233,10 +239,10 @@ def _draw_edge_lines(screen: pygame.Surface, cam: Camera) -> None:
 # Where to draw the sign for each approach (right side of road before intersection).
 # Keys = cardinal direction the sign faces; values = (world_x_offset, world_y_offset).
 _SIGN_OFFSETS: Dict[str, Tuple[float, float]] = {
-    "W": (-ROAD_HALF_W - 2.0, -ROAD_HALF_W - 2.0),   # SW corner (right of east-bound)
-    "E": ( ROAD_HALF_W + 2.0,  ROAD_HALF_W + 2.0),   # NE corner (right of west-bound)
-    "N": (-ROAD_HALF_W - 2.0,  ROAD_HALF_W + 2.0),   # NW corner (right of south-bound)
-    "S": ( ROAD_HALF_W + 2.0, -ROAD_HALF_W - 2.0),   # SE corner (right of north-bound)
+    "W": (-ROAD_HALF_W - 0.5, -ROAD_HALF_W - 0.5),   # SW corner (right of east-bound)
+    "E": ( ROAD_HALF_W + 0.5,  ROAD_HALF_W + 0.5),   # NE corner (right of west-bound)
+    "N": (-ROAD_HALF_W - 0.5,  ROAD_HALF_W + 0.5),   # NW corner (right of south-bound)
+    "S": ( ROAD_HALF_W + 0.5, -ROAD_HALF_W - 0.5),   # SE corner (right of north-bound)
 }
 
 
@@ -313,6 +319,70 @@ def _draw_diamond(
 
 
 # ── Decorative neighbourhood elements ────────────────────────────────────────
+
+# ── Traffic-light semaphores ──────────────────────────────────────────────────
+
+# Position each traffic light on the right side of the approaching lane,
+# just outside the intersection box at the stop line (~10.5 m from centre).
+_LIGHT_OFFSETS: Dict[str, Tuple[float, float]] = {
+    "W": (-ROAD_HALF_W - 0.5, -ROAD_HALF_W - 0.5),   # SW corner
+    "E": ( ROAD_HALF_W + 0.5,  ROAD_HALF_W + 0.5),   # NE corner
+    "N": (-ROAD_HALF_W - 0.5,  ROAD_HALF_W + 0.5),   # NW corner
+    "S": ( ROAD_HALF_W + 0.5, -ROAD_HALF_W - 0.5),   # SE corner
+}
+
+_COLOR_FOR_PHASE = {
+    "GREEN":  COLOR_LIGHT_GREEN,
+    "YELLOW": COLOR_LIGHT_YELLOW,
+    "RED":    COLOR_LIGHT_RED,
+}
+
+def _draw_semaphores(
+    screen: pygame.Surface, cam: Camera, sem: Dict[str, Any]
+) -> None:
+    """Render a 3-bulb traffic light for every approach."""
+    colors = sem.get("colors", {})
+    for approach, (wx, wy) in _LIGHT_OFFSETS.items():
+        phase = colors.get(approach, "RED")
+        sx, sy = cam.world_to_screen(wx, wy)
+        sx, sy = int(sx), int(sy)
+        _draw_single_light(screen, cam, sx, sy, phase)
+
+
+def _draw_single_light(
+    screen: pygame.Surface, cam: Camera, sx: int, sy: int, phase: str
+) -> None:
+    """Draw one 3-bulb vertical traffic light at screen pos (sx, sy)."""
+    bulb_r = max(3, int(1.8 * cam.zoom))
+    spacing = int(bulb_r * 2.4)
+    housing_w = bulb_r * 2 + max(2, int(cam.zoom * 0.6))
+    housing_h = spacing * 2 + bulb_r * 2 + max(2, int(cam.zoom * 0.6))
+
+    # Pole
+    pole_h = int(bulb_r * 3)
+    pw = max(1, int(cam.zoom * 0.45))
+    pygame.draw.line(screen, COLOR_SIGN_POLE, (sx, sy + housing_h // 2),
+                     (sx, sy + housing_h // 2 + pole_h), pw)
+
+    # Housing rectangle
+    hr = pygame.Rect(sx - housing_w // 2, sy - housing_h // 2, housing_w, housing_h)
+    pygame.draw.rect(screen, COLOR_LIGHT_HOUSING, hr, border_radius=max(1, bulb_r // 2))
+
+    # Bulbs: top=RED, mid=YELLOW, bot=GREEN
+    bulb_defs = [
+        ("RED",    sy - spacing),
+        ("YELLOW", sy),
+        ("GREEN",  sy + spacing),
+    ]
+    for bulb_phase, by in bulb_defs:
+        if bulb_phase == phase:
+            c = _COLOR_FOR_PHASE[bulb_phase]
+        else:
+            c = COLOR_LIGHT_OFF
+        pygame.draw.circle(screen, c, (sx, by), bulb_r)
+
+
+# ── Decorative neighbourhood elements (cont.) ────────────────────────────────
 
 def _draw_decorations(screen: pygame.Surface, cam: Camera) -> None:
     for dec in _DECORATIONS:

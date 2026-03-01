@@ -295,7 +295,11 @@ class SimBridge:
         Run ML inference for one standalone vehicle entity.
         """
         raw = fa_inferenta_din_json(
-            ego_car.ml_payload(self._world.sign_for_car(ego_car), others),
+            ego_car.ml_payload(
+                self._world.sign_for_car(ego_car),
+                others,
+                traffic_light=self._world.semaphore_color_for_approach(ego_car.approach),
+            ),
             model_path=self._model_path,
         )
         if raw.get("status") == "success":
@@ -429,6 +433,7 @@ class SimBridge:
             "safety_interventions": self._world.safety_interventions,
             "collision_resolutions": self._world.collision_resolutions,
             "bus_metrics": self._bus.metrics.report(),
+            "semaphore": self._world.semaphore_state(),
             "intersections": [
                 {
                     "id": "INT_000",
