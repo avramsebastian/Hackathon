@@ -83,7 +83,7 @@ def draw_vehicle_panel(
     decisions: Dict[str, Dict[str, Any]],
     frame: int,
 ) -> None:
-    sh = screen.get_height()
+    sw, sh = screen.get_size()
     max_panel_h = max(120, sh - CONTROL_BAR_H - TOP_BAR_H - 16)
     base_h = HUD_PAD * 2 + 24
     more_h = 18
@@ -97,8 +97,30 @@ def draw_vehicle_panel(
     if hidden > 0:
         panel_h += more_h
 
+    # Dynamic column layout so "● SLOW DOWN" always fits.
+    id_values = [str(v.get("id", "")) for v in visible] or [""]
+    speed_values = [f"{float(v.get('speed', 0.0)):.0f} km/h" for v in visible] or ["0 km/h"]
+    id_w = max(_f("sm").size(text)[0] for text in id_values)
+    speed_w = max(_f("sm").size(text)[0] for text in speed_values)
+    slow_label = "● SLOW DOWN"
+    slow_w = _f("sm").size(slow_label)[0]
+    header_w = _f("md").size("Active Vehicles")[0]
+    more_w = _f("sm").size(f"+{hidden} more")[0] if hidden > 0 else 0
+
+    swatch_x = HUD_PAD
+    id_x = swatch_x + 20
+    speed_x = id_x + id_w + 12
+    slow_x = speed_x + speed_w + 16
+    content_right = max(
+        HUD_PAD + header_w,
+        slow_x + slow_w,
+        HUD_PAD + more_w,
+    )
+    panel_w = max(HUD_PANEL_W, content_right + HUD_PAD)
+    panel_w = min(panel_w, max(HUD_PANEL_W, sw - 12))
+
     panel_y = sh - CONTROL_BAR_H - panel_h - 6
-    panel_rect = pygame.Rect(6, panel_y, HUD_PANEL_W, panel_h)
+    panel_rect = pygame.Rect(6, panel_y, panel_w, panel_h)
 
     draw_alpha_rect(screen, COLOR_HUD_BG, panel_rect, border_radius=8)
     pygame.draw.rect(screen, COLOR_HUD_BORDER, panel_rect, 1, border_radius=8)
@@ -110,22 +132,22 @@ def draw_vehicle_panel(
     for v in visible:
         vid = v["id"]
         speed = v.get("speed", 0.0)
-        color = _tuple_color(v.get("color", (180, 180, 180)))
+        color = _vehicle_display_color(v)
         dec = decisions.get(vid, {})
         ml = dec.get("decision", "none")
         slow = should_slow_down(v, ml)
 
         # Colour swatch
-        pygame.draw.rect(screen, color, (panel_rect.x + HUD_PAD, y + 5, 14, 14), border_radius=3)
+        pygame.draw.rect(screen, color, (panel_rect.x + swatch_x, y + 5, 14, 14), border_radius=3)
 
         # ID
-        render_text(screen, _f("sm"), vid, (panel_rect.x + HUD_PAD + 20, y + 4), COLOR_HUD_TEXT)
+        render_text(screen, _f("sm"), vid, (panel_rect.x + id_x, y + 4), COLOR_HUD_TEXT)
 
         # Speed
         render_text(
             screen, _f("sm"),
             f"{speed:.0f} km/h",
-            (panel_rect.x + HUD_PAD + 120, y + 4),
+            (panel_rect.x + speed_x, y + 4),
             COLOR_HUD_DIM,
         )
 
@@ -135,8 +157,8 @@ def draw_vehicle_panel(
             if blink:
                 render_text(
                     screen, _f("sm"),
-                    "● SLOW DOWN",
-                    (panel_rect.x + HUD_PAD + 190, y + 4),
+                    slow_label,
+                    (panel_rect.x + slow_x, y + 4),
                     COLOR_WARNING,
                 )
 
@@ -230,3 +252,11 @@ def _tuple_color(c: Any) -> Tuple[int, int, int]:
     if isinstance(c, (list, tuple)) and len(c) >= 3:
         return (int(c[0]), int(c[1]), int(c[2]))
     return (180, 180, 180)
+
+
+def _vehicle_display_color(vehicle: Dict[str, Any]) -> Tuple[int, int, int]:
+    """Match active-vehicle swatch color with in-map vehicle color rules."""
+    role = str(vehicle.get("role", "")).lower()
+    if vehicle.get("priority", False) or role in {"ambulance", "police", "fire"}:
+        return (255, 255, 255)
+    return _tuple_color(vehicle.get("color", (180, 180, 180)))

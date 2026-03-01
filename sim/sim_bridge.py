@@ -315,6 +315,9 @@ class SimBridge:
             "direction": _cardinal_direction(car),
             "vx": car.vx,
             "vy": car.vy,
+            "turn_intent": car.ml_direction,
+            "is_turning": car.is_turning,
+            "dist_to_stop_line": self._distance_to_stop_line(car, cx, cy),
             "approach": car.approach,
             "role": car.role,
             "priority": car.priority,
@@ -325,6 +328,20 @@ class SimBridge:
             "int_cx": cx,
             "int_cy": cy,
         }
+
+    def _distance_to_stop_line(self, car: Car, cx: float, cy: float) -> float:
+        """Distance to stop line along current travel axis (m)."""
+        rx, ry = car.x - cx, car.y - cy
+        edge = self._world.policy.stop_line_offset_m
+        if car.vx > 0:       # W -> E
+            return -rx - edge
+        if car.vx < 0:       # E -> W
+            return rx - edge
+        if car.vy < 0:       # N -> S
+            return ry - edge
+        if car.vy > 0:       # S -> N
+            return -ry - edge
+        return 0.0
 
     # ── tick ──────────────────────────────────────────────────────────────────
 

@@ -23,6 +23,8 @@ from ui.helpers import (
     draw_alpha_circle,
 )
 
+_PRETURN_BLINK_DISTANCE_M = 12.0
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  PUBLIC  draw_all_vehicles()
@@ -163,6 +165,7 @@ def _draw_vehicle(
     tl_x = cx - int(cl * 0.42)
     pygame.draw.circle(car_surf, (200, 30, 30), (tl_x, hl_y_top), max(1, hl_r - 1))
     pygame.draw.circle(car_surf, (200, 30, 30), (tl_x, hl_y_bot), max(1, hl_r - 1))
+    _draw_turn_indicators(car_surf, vehicle, cx, cy, cl, cw, frame, cam.zoom)
 
     # Rotate & blit
     rotated = pygame.transform.rotate(car_surf, heading)
@@ -246,6 +249,45 @@ def _draw_gyrophars(
     else:
         pygame.draw.circle(screen, blue_dim, (lx, ly), light_r)
         pygame.draw.circle(screen, blue_bright, (rx, ry), light_r)
+
+
+def _draw_turn_indicators(
+    surface: pygame.Surface,
+    vehicle: Dict[str, Any],
+    cx: int,
+    cy: int,
+    car_length: float,
+    car_width: float,
+    frame: int,
+    zoom: float,
+) -> None:
+    """Blink indicator during the turn and shortly before the stop line."""
+    intent = str(vehicle.get("turn_intent", "FORWARD")).upper()
+    if intent not in ("LEFT", "RIGHT"):
+        return
+
+    dist_to_line_raw = vehicle.get("dist_to_stop_line")
+    try:
+        dist_to_line = float(dist_to_line_raw)
+    except (TypeError, ValueError):
+        dist_to_line = float("inf")
+
+    active_turn = bool(vehicle.get("is_turning", False))
+    preturn_window = 0.0 < dist_to_line <= _PRETURN_BLINK_DISTANCE_M
+    if not (active_turn or preturn_window):
+        return
+
+    # Toggle roughly 5 times per second at 60 FPS.
+    if (frame // 6) % 2 == 1:
+        return
+
+    front_x = cx + int(car_length * 0.42)
+    rear_x = cx - int(car_length * 0.42)
+    side_y = cy - int(car_width * 0.45) if intent == "LEFT" else cy + int(car_width * 0.45)
+    rad = max(1, int(zoom * 0.9))
+    amber = (255, 170, 20)
+    pygame.draw.circle(surface, amber, (front_x, side_y), rad)
+    pygame.draw.circle(surface, amber, (rear_x, side_y), rad)
 
 
 def _darken(color: Tuple[int, int, int], amount: int = 40) -> Tuple[int, int, int]:
