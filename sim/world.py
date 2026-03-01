@@ -23,6 +23,7 @@ from sim.traffic_policy import (
     danger_score,
     pair_safe_distance_m,
 )
+from sim.network import IntersectionNode, RoadNetwork, default_network
 
 log = logging.getLogger("world")
 
@@ -141,6 +142,7 @@ class Car:
     wait_s: float = 0.0
     vx: float = 0.0        # unit velocity component  (+1 / -1 / 0)
     vy: float = 0.0
+    current_int_id: str = ""   # intersection this car is approaching / in
     passed: bool = field(default=False, repr=False)
     stopped: bool = field(default=False, repr=False)
     stop_wait_s: float = field(default=0.0, repr=False)
@@ -214,17 +216,19 @@ class Car:
                 self.vx = 0.0
 
     # ── helpers ───────────────────────────────────────────────────────────
-    def has_passed(self, threshold: float = 10.0) -> bool:
-        """True once the car is *threshold* metres past the origin
+    def has_passed(self, threshold: float = 10.0,
+                   cx: float = 0.0, cy: float = 0.0) -> bool:
+        """True once the car is *threshold* metres past *cx, cy*
         along its travel axis.
         """
-        if self.vx > 0 and self.x > threshold:
+        rx, ry = self.x - cx, self.y - cy
+        if self.vx > 0 and rx > threshold:
             return True
-        if self.vx < 0 and self.x < -threshold:
+        if self.vx < 0 and rx < -threshold:
             return True
-        if self.vy > 0 and self.y > threshold:
+        if self.vy > 0 and ry > threshold:
             return True
-        if self.vy < 0 and self.y < -threshold:
+        if self.vy < 0 and ry < -threshold:
             return True
         return False
 
@@ -286,10 +290,11 @@ class Car:
 
 
 class World:
-    """Entity-based intersection scenario.
+    """Entity-based multi-intersection scenario.
 
-    Cars spawn on random approach arms and drive through a single
-    intersection.  After passing, they coast to a stop.
+    Cars spawn on the terminal arms of a :class:`~sim.network.RoadNetwork`
+    and drive through one or more intersections.  Each intersection has its
+    own semaphore or sign configuration.
 
     Parameters
     ----------
@@ -300,8 +305,10 @@ class World:
     policy : SafetyPolicy or None
         Tunable constants; uses defaults when *None*.
     priority_axis : str
-        ``'EW'`` or ``'NS'`` — determines which approaches get PRIORITY
-        signs and which get STOP / YIELD.
+        ``'EW'`` or ``'NS'`` — default sign layout (used when creating
+        the default network).
+    network : RoadNetwork or None
+        The road layout.  Uses :func:`default_network` when *None*.
     """
 
     def __init__(
@@ -310,11 +317,18 @@ class World:
         seed: Optional[int] = None,
         policy: Optional[SafetyPolicy] = None,
         priority_axis: str = "EW",
+        network: Optional[RoadNetwork] = None,
     ) -> None:
         self.policy = policy or SafetyPolicy()
         self.priority_axis = self._normalize_priority_axis(priority_axis)
+        self.network = network or default_network()
+        # Per-intersection sign tables
+        self._signs: Dict[str, Dict[str, str]] = {}
+        for node in self.network.intersections.values():
+            self._signs[node.id] = self._build_signs_by_approach(node.priority_axis)
+        # Legacy single-intersection shims
         self.signs_by_approach: Dict[str, str] = self._build_signs_by_approach(self.priority_axis)
-        self.current_sign: str = "YIELD"  # legacy fallback for old call-sites
+        self.current_sign: str = "YIELD"
         self.num_cars = max(1, int(num_cars))
         self._rng = random.Random(seed)
         self.cars: List[Car] = []
@@ -324,9 +338,14 @@ class World:
         self._green_ttl_s: float = 0.0
         self._tick_count: int = 0
 
-        # ── Semaphore state ─────────────────────────────────────────────
-        self._sem_green_axis: str = "EW"        # which axis currently has green
-        self._sem_phase: str = _PHASE_GREEN      # current phase for the green axis
+        # ── Semaphore state (per intersection) ──────────────────────────
+        for node in self.network.intersections.values():
+            node.sem_green_axis = node.priority_axis
+            node.sem_phase = _PHASE_GREEN
+            node.sem_timer = self.policy.semaphore_green_s
+        # Legacy single-intersection fields (kept for compatibility)
+        self._sem_green_axis: str = "EW"
+        self._sem_phase: str = _PHASE_GREEN
         self._sem_timer: float = self.policy.semaphore_green_s
 
         self._init_cars()
@@ -341,6 +360,10 @@ class World:
         self.collision_resolutions = 0
         self.green_approach = "W"
         self._green_ttl_s = 0.0
+        for node in self.network.intersections.values():
+            node.sem_green_axis = node.priority_axis
+            node.sem_phase = _PHASE_GREEN
+            node.sem_timer = self.policy.semaphore_green_s
         self._sem_green_axis = "EW"
         self._sem_phase = _PHASE_GREEN
         self._sem_timer = self.policy.semaphore_green_s
@@ -361,11 +384,16 @@ class World:
     def get_signs(self) -> Dict[str, str]:
         return dict(self.signs_by_approach)
 
+    def get_signs_for(self, int_id: str) -> Dict[str, str]:
+        """Return the sign table for intersection *int_id*."""
+        return dict(self._signs.get(int_id, self.signs_by_approach))
+
     def sign_for_approach(self, approach: str) -> str:
         return self.signs_by_approach.get(str(approach).upper(), "NO_SIGN")
 
     def sign_for_car(self, car: Car) -> str:
-        return self.sign_for_approach(car.approach)
+        table = self._signs.get(car.current_int_id, self.signs_by_approach)
+        return table.get(str(car.approach).upper(), "NO_SIGN")
 
     # ── physics tick ──────────────────────────────────────────────────────
 
@@ -423,8 +451,28 @@ class World:
             # Don't mark a car as "passed" while it's still following
             # turn waypoints — the intermediate velocity isn't cardinal
             # and the car hasn't reached the exit lane yet.
-            if not car.passed and not car.is_turning and car.has_passed(self.policy.pass_threshold_m):
-                car.passed = True
+            node = self.network.intersections.get(car.current_int_id)
+            cx = node.cx if node else 0.0
+            cy = node.cy if node else 0.0
+            if not car.passed and not car.is_turning and car.has_passed(
+                self.policy.pass_threshold_m, cx, cy
+            ):
+                # Check if car should transition to next intersection
+                next_int = self._next_intersection_for(car)
+                if next_int is not None:
+                    # Transition: reset per-intersection state for the new target
+                    car.current_int_id = next_int.id
+                    # Determine the arrival arm from the road connection
+                    new_approach = self._arrival_arm(car, next_int)
+                    if new_approach:
+                        car.approach = new_approach
+                    car.has_turned = False
+                    car.stop_completed = False
+                    car.stop_wait_s = 0.0
+                    # Pick a new random direction for the next intersection
+                    car.ml_direction = self._rng.choice(_ML_DIRECTIONS)
+                else:
+                    car.passed = True
             # Clear leftover waypoints once a car has passed through so
             # it doesn't stay stuck in "turning" state while coasting.
             if car.passed and car._turn_waypoints:
@@ -467,10 +515,11 @@ class World:
 
     def _make_random_car(self, idx: int) -> Car:
         """
-        Spawn one car on a random approach arm, while keeping a minimum
-        distance from already spawned cars.
+        Spawn one car on a random terminal arm of the road network.
         """
-        approach = self._rng.choice(_APPROACHES)
+        terminal_arms = self.network.terminal_arms()
+        int_id, arm = self._rng.choice(terminal_arms)
+
         speed = self._rng.uniform(60.0, self.policy.speed_limit_kmh + 10.0)
         ml_direction = self._rng.choice(_ML_DIRECTIONS)
         role = self._rng.choices(
@@ -485,20 +534,23 @@ class World:
         pos: Optional[Tuple[float, float, float, float]] = None
         for _ in range(self.policy.spawn_max_attempts):
             distance = self._rng.uniform(self.policy.spawn_min_radius_m, self.policy.spawn_max_radius_m)
-            candidate = self._spawn_position(approach, distance)
+            candidate = self.network.arm_spawn_position(
+                int_id, arm, distance, self.policy.lane_offset_m,
+            )
             if self._spawn_is_clear(candidate[0], candidate[1]):
                 pos = candidate
                 break
 
-            # Try another approach if this lane is crowded.
-            approach = self._rng.choice(_APPROACHES)
+            # Try another terminal arm if this lane is crowded.
+            int_id, arm = self._rng.choice(terminal_arms)
 
         if pos is None:
-            # Deterministic fallback: radial spread by index.
-            fallback_approach = _APPROACHES[idx % len(_APPROACHES)]
+            # Deterministic fallback: cycle through terminal arms.
+            int_id, arm = terminal_arms[idx % len(terminal_arms)]
             distance = self.policy.spawn_min_radius_m + idx * 10.0
-            pos = self._spawn_position(fallback_approach, distance)
-            approach = fallback_approach
+            pos = self.network.arm_spawn_position(
+                int_id, arm, distance, self.policy.lane_offset_m,
+            )
 
         x, y, vx, vy = pos
         return Car(
@@ -507,17 +559,19 @@ class World:
             y=y,
             speed=speed,
             ml_direction=ml_direction,
-            approach=approach,
+            approach=arm,
             role=role,
             cruise_speed=speed,
             speed_limit_kmh=self.policy.speed_limit_kmh,
             vx=vx,
             vy=vy,
+            current_int_id=int_id,
         )
 
     def _spawn_position(self, approach: str, distance: float) -> Tuple[float, float, float, float]:
         """
         Return spawn (x, y) and heading vector (vx, vy) for one approach arm.
+        Legacy — used only by old call-sites; new code uses network arms.
         """
         L = self.policy.lane_offset_m
         arm = approach.upper()
@@ -531,15 +585,24 @@ class World:
 
     # ── turning ────────────────────────────────────────────────────────────
 
+    def _int_center(self, car: Car) -> Tuple[float, float]:
+        """Return the centre of the car's current intersection."""
+        node = self.network.intersections.get(car.current_int_id)
+        return (node.cx, node.cy) if node else (0.0, 0.0)
+
     @staticmethod
-    def _distance_to_center(car: Car) -> float:
-        """Signed distance from *car* to the intersection centre along its
-        travel axis.  Positive → approaching, zero/negative → at or past."""
-        if car.vx > 0:  return -car.x
-        if car.vx < 0:  return  car.x
-        if car.vy < 0:  return  car.y
-        if car.vy > 0:  return -car.y
-        return math.hypot(car.x, car.y)
+    def _distance_to_center_xy(car: Car, cx: float, cy: float) -> float:
+        """Signed distance from *car* to *(cx, cy)* along its travel axis."""
+        rx, ry = car.x - cx, car.y - cy
+        if car.vx > 0:  return -rx
+        if car.vx < 0:  return  rx
+        if car.vy < 0:  return  ry
+        if car.vy > 0:  return -ry
+        return math.hypot(rx, ry)
+
+    def _distance_to_center(self, car: Car) -> float:
+        cx, cy = self._int_center(car)
+        return self._distance_to_center_xy(car, cx, cy)
 
     def _apply_turns(self) -> None:
         """Assign turn waypoints to cars entering their turn zone.
@@ -557,13 +620,15 @@ class World:
             dist = self._distance_to_center(car)
             if dist > trigger:
                 continue
-            # Begin the turn: give the car waypoints to follow.
-            car._turn_waypoints = [wp for wp in wps]  # shallow copy
+            # Offset waypoints by the intersection centre.
+            cx, cy = self._int_center(car)
+            car._turn_waypoints = [(wx + cx, wy + cy) for wx, wy in wps]
             car.has_turned = True
             log.debug(
                 "TURN START: %s approach=%s dir=%s  trigger_dist=%.1f  "
                 "waypoints=%s",
-                car.id, car.approach, car.ml_direction, dist, wps,
+                car.id, car.approach, car.ml_direction, dist,
+                car._turn_waypoints,
             )
 
     def _spawn_is_clear(self, x: float, y: float) -> bool:
@@ -572,29 +637,64 @@ class World:
                 return False
         return True
 
+    def _next_intersection_for(self, car: Car) -> Optional[IntersectionNode]:
+        """If the car just passed its current intersection and is heading
+        toward a connected one, return the next IntersectionNode."""
+        # Determine what arm the car is exiting through.
+        exit_arm = self._exit_arm(car)
+        if exit_arm is None:
+            return None
+        conn = self.network.connected_arm(car.current_int_id, exit_arm)
+        if conn is None:
+            return None
+        next_id, _entry_arm = conn
+        return self.network.intersections.get(next_id)
+
+    def _exit_arm(self, car: Car) -> Optional[str]:
+        """Determine which arm a car is exiting through based on its velocity."""
+        if car.vx > 0.5:   return "E"
+        if car.vx < -0.5:  return "W"
+        if car.vy > 0.5:   return "N"
+        if car.vy < -0.5:  return "S"
+        return None
+
+    def _arrival_arm(self, car: Car, target_node: IntersectionNode) -> Optional[str]:
+        """Determine the approach arm at the target intersection."""
+        exit_arm = self._exit_arm(car)
+        if exit_arm is None:
+            return None
+        conn = self.network.connected_arm(car.current_int_id, exit_arm)
+        if conn is None:
+            return None
+        _next_id, entry_arm = conn
+        return entry_arm
+
     def _car_in_intersection(self, car: Car) -> bool:
-        """True when the car is physically inside the intersection box."""
+        """True when the car is physically inside its target intersection box."""
         half = self.policy.intersection_box_half_m
-        return abs(car.x) < half and abs(car.y) < half
+        cx, cy = self._int_center(car)
+        return abs(car.x - cx) < half and abs(car.y - cy) < half
 
     def _distance_to_stop_line(self, car: Car) -> float:
         """Distance from car to its stop line along the travel axis.
 
         The stop line sits at ``policy.stop_line_offset_m`` from the
-        intersection centre on the car's approach side.  Returns a
-        positive value when the car hasn't reached the line yet,
-        zero/negative when it has passed.
+        car's current intersection centre.  Returns a positive value
+        when the car hasn't reached the line yet, zero/negative when
+        it has passed.
         """
+        cx, cy = self._int_center(car)
+        rx, ry = car.x - cx, car.y - cy
         edge = self.policy.stop_line_offset_m
         if car.vx > 0:       # W → E
-            return -car.x - edge
+            return -rx - edge
         elif car.vx < 0:     # E → W
-            return car.x - edge
+            return rx - edge
         elif car.vy < 0:     # N → S
-            return car.y - edge
+            return ry - edge
         elif car.vy > 0:     # S → N
-            return -car.y - edge
-        return math.hypot(car.x, car.y)
+            return -ry - edge
+        return math.hypot(rx, ry)
 
     # ── safety / control ─────────────────────────────────────────────────
 
@@ -608,15 +708,20 @@ class World:
                 decision_payload = {"decision": raw_decision}
             target = self._target_speed_from_decision(car, decision_payload)
             if self.policy.world_signal_scheduler_enabled and self._must_yield_to_signal(car):
-                dist = math.hypot(car.x, car.y)
+                cx, cy = self._int_center(car)
+                dist = math.hypot(car.x - cx, car.y - cy)
                 if dist <= self.policy.red_hard_radius_m:
                     target = 0.0
                 else:
                     target = min(target, self.policy.red_soft_speed_kmh)
 
+            # ── Per-intersection control type ────────────────────────────
+            car_node = self.network.intersections.get(car.current_int_id)
+            car_has_sem = car_node.has_semaphore if car_node else False
+
             # ── Semaphore enforcement (overrides signs when enabled) ─────
-            if self.policy.semaphore_enabled and not car.passed:
-                sem_color = self.semaphore_color_for_approach(car.approach)
+            if car_has_sem and not car.passed:
+                sem_color = self.semaphore_color_for_car(car)
                 if sem_color in (_PHASE_RED, _PHASE_YELLOW):
                     dist_to_line = self._distance_to_stop_line(car)
                     if dist_to_line > self.policy.semaphore_brake_zone_m:
@@ -638,8 +743,8 @@ class World:
                     # Also mark stop_completed so sign logic doesn't re-apply
                     car.stop_completed = True
 
-            # ── Stop / Yield enforcement (signs – only when semaphore off) ─
-            elif not self.policy.semaphore_enabled:
+            # ── Stop / Yield enforcement (signs – only when no semaphore) ─
+            elif not car_has_sem:
                 sign = self.sign_for_car(car)
                 required_wait = 0.0
                 if sign == "STOP":
@@ -677,7 +782,7 @@ class World:
             # Lift the cap ONLY during yellow so committed cars clear
             # the box quickly, then re-apply once yellow is over.
             if self._car_in_intersection(car) and not car.passed:
-                sem_color = self.semaphore_color_for_approach(car.approach)
+                sem_color = self.semaphore_color_for_car(car)
                 committed = self._distance_to_stop_line(car) < -2.0
                 if committed and sem_color == _PHASE_YELLOW:
                     target = max(target, car.cruise_speed)
@@ -902,7 +1007,10 @@ class World:
         # conflicting phases and the projection would wrongly block
         # green-phase cars from launching.
         perpendicular = (a.vx != 0) != (b.vx != 0)
-        if not (perpendicular and self.policy.semaphore_enabled):
+        a_node = self.network.intersections.get(a.current_int_id)
+        b_node = self.network.intersections.get(b.current_int_id)
+        both_sem = (a_node and a_node.has_semaphore) and (b_node and b_node.has_semaphore)
+        if not (perpendicular and both_sem):
             va = max(0.0, targets.get(a.id, a.speed)) / 3.6
             vb = max(0.0, targets.get(b.id, b.speed)) / 3.6
             horizon = max(dt, self.policy.horizon_s)
@@ -925,7 +1033,7 @@ class World:
         # different times and the step granularity skipped the overlap).
         # SKIP this check when the semaphore is active — the traffic
         # light already separates the conflicting phases.
-        if not (a.passed or b.passed) and not self.policy.semaphore_enabled:
+        if not (a.passed or b.passed) and not both_sem:
             da = self._distance_to_stop_line(a)
             db = self._distance_to_stop_line(b)
             perpendicular = (a.vx != 0) != (b.vx != 0)  # one horizontal, one vertical
@@ -1006,9 +1114,11 @@ class World:
         if abs(pa - pb) > 0.1:
             return a if pa < pb else b
 
-        # Fallback intersection guard: farther from centre yields.
-        da = math.hypot(a.x, a.y)
-        db = math.hypot(b.x, b.y)
+        # Fallback intersection guard: farther from its intersection centre yields.
+        cxa, cya = self._int_center(a)
+        cxb, cyb = self._int_center(b)
+        da = math.hypot(a.x - cxa, a.y - cya)
+        db = math.hypot(b.x - cxb, b.y - cyb)
         if abs(da - db) > 0.1:
             return a if da > db else b
 
@@ -1018,39 +1128,55 @@ class World:
     # ── Semaphore (fixed-cycle traffic lights) ──────────────────────────
 
     def _update_semaphore(self, dt: float) -> None:
-        """Advance the fixed-cycle semaphore state machine."""
-        self._sem_timer -= dt
-        if self._sem_timer > 0.0:
-            return
+        """Advance per-intersection semaphore state machines."""
+        for node in self.network.intersections.values():
+            if not node.has_semaphore:
+                continue
+            node.sem_timer -= dt
+            if node.sem_timer > 0.0:
+                continue
+            if node.sem_phase == _PHASE_GREEN:
+                node.sem_phase = _PHASE_YELLOW
+                node.sem_timer = self.policy.semaphore_yellow_s
+            elif node.sem_phase == _PHASE_YELLOW:
+                node.sem_phase = _PHASE_RED
+                node.sem_timer = self.policy.semaphore_red_clearance_s
+            else:
+                other = "NS" if node.sem_green_axis == "EW" else "EW"
+                node.sem_green_axis = other
+                node.sem_phase = _PHASE_GREEN
+                node.sem_timer = self.policy.semaphore_green_s
+        # Keep legacy fields in sync with first semaphore intersection.
+        for node in self.network.intersections.values():
+            if node.has_semaphore:
+                self._sem_green_axis = node.sem_green_axis
+                self._sem_phase = node.sem_phase
+                self._sem_timer = node.sem_timer
+                break
 
-        if self._sem_phase == _PHASE_GREEN:
-            # green → yellow
-            self._sem_phase = _PHASE_YELLOW
-            self._sem_timer = self.policy.semaphore_yellow_s
-        elif self._sem_phase == _PHASE_YELLOW:
-            # yellow → red (all-red clearance for both axes)
-            self._sem_phase = _PHASE_RED
-            self._sem_timer = self.policy.semaphore_red_clearance_s
-        else:
-            # red clearance done → switch axis, new green
-            other = "NS" if self._sem_green_axis == "EW" else "EW"
-            self._sem_green_axis = other
-            self._sem_phase = _PHASE_GREEN
-            self._sem_timer = self.policy.semaphore_green_s
+    def semaphore_color_for_car(self, car: Car) -> str:
+        """Return 'GREEN', 'YELLOW', or 'RED' for *car*'s current intersection."""
+        node = self.network.intersections.get(car.current_int_id)
+        if node is None or not node.has_semaphore:
+            return "GREEN"
+        axis_for_approach = {"N": "NS", "S": "NS", "E": "EW", "W": "EW"}
+        car_axis = axis_for_approach.get(car.approach, "EW")
+        if car_axis == node.sem_green_axis:
+            return node.sem_phase
+        return _PHASE_RED
 
     def semaphore_color_for_approach(self, approach: str) -> str:
-        """Return 'GREEN', 'YELLOW', or 'RED' for the given approach."""
+        """Legacy method — uses first semaphore intersection."""
         if not self.policy.semaphore_enabled:
-            return "GREEN"  # semaphore off → everyone treated as green
+            return "GREEN"
         axis_for_approach = {
             "N": "NS", "S": "NS",
             "E": "EW", "W": "EW",
         }
         car_axis = axis_for_approach.get(approach, "EW")
         if car_axis == self._sem_green_axis:
-            return self._sem_phase  # GREEN, YELLOW, or RED (clearance)
-        else:
-            return _PHASE_RED
+            return self._sem_phase
+        return _PHASE_RED
 
     def semaphore_state(self) -> Dict[str, Any]:
         """Return full semaphore state dict (for UI / bus)."""
@@ -1064,12 +1190,34 @@ class World:
             },
         }
 
+    def semaphore_state_for(self, int_id: str) -> Dict[str, Any]:
+        """Return semaphore state for a specific intersection."""
+        node = self.network.intersections.get(int_id)
+        if node is None or not node.has_semaphore:
+            return {"enabled": False}
+        axis_for_approach = {"N": "NS", "S": "NS", "E": "EW", "W": "EW"}
+        colors = {}
+        for a in _APPROACHES:
+            car_axis = axis_for_approach.get(a, "EW")
+            if car_axis == node.sem_green_axis:
+                colors[a] = node.sem_phase
+            else:
+                colors[a] = _PHASE_RED
+        return {
+            "enabled": True,
+            "green_axis": node.sem_green_axis,
+            "phase": node.sem_phase,
+            "timer": round(node.sem_timer, 1),
+            "colors": colors,
+        }
+
     def _must_yield_to_signal(self, car: Car) -> bool:
         if car.passed:
             return False
         if self._is_emergency(car):
             return False
-        dist = math.hypot(car.x, car.y)
+        cx, cy = self._int_center(car)
+        dist = math.hypot(car.x - cx, car.y - cy)
         if dist > self.policy.signal_control_radius_m:
             return False
         return car.approach != self.green_approach
@@ -1084,7 +1232,8 @@ class World:
         for car in self.cars:
             if car.passed:
                 continue
-            dist = math.hypot(car.x, car.y)
+            cx, cy = self._int_center(car)
+            dist = math.hypot(car.x - cx, car.y - cy)
             if dist > self.policy.signal_control_radius_m:
                 continue
             score = danger_score(car, self.policy)

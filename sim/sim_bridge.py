@@ -42,6 +42,7 @@ for _p in [
         sys.path.insert(0, _p)
 
 from sim.world import World, Car
+from sim.network import default_network
 from sim.traffic_policy import SafetyPolicy, danger_score
 from bus.v2x_bus import V2XBus
 from comunication.Inference import fa_inferenta_din_json
@@ -75,12 +76,13 @@ def _cardinal_direction(car: Car) -> str:
     return _VEC_TO_CARDINAL.get((int(car.vx), int(car.vy)), "NORTH")
 
 
-def _road_line(car: Car) -> List[Tuple[float, float]]:
+def _road_line(car: Car, cx: float = 0.0, cy: float = 0.0) -> List[Tuple[float, float]]:
     """
     Compute a road_line polyline showing the car's planned route through
     the intersection based on its approach arm and intended manoeuvre
     (FORWARD / LEFT / RIGHT).
 
+    *cx, cy* — centre of the car's current intersection.
     Right turns follow a tight arc near the intersection corner.
     Left turns cross through the intersection centre with a wider arc.
     """
@@ -111,22 +113,22 @@ def _road_line(car: Car) -> List[Tuple[float, float]]:
 
     line = _lines.get((approach, ml_dir))
     if line:
-        return line
+        return [(px + cx, py + cy) for px, py in line]
 
     # Fallback: straight line using velocity (legacy / unknown approach)
     if car.vx != 0:
-        lane_y = car.y if abs(car.y) > 0.1 else 0.0
+        lane_y = car.y if abs(car.y) > 0.1 else cy
         return [
-            (-100.0 * car.vx, lane_y),
-            (0.0, lane_y),
-            (100.0 * car.vx, lane_y),
+            (-100.0 * car.vx + cx, lane_y),
+            (cx, lane_y),
+            (100.0 * car.vx + cx, lane_y),
         ]
     else:
-        lane_x = car.x if abs(car.x) > 0.1 else 0.0
+        lane_x = car.x if abs(car.x) > 0.1 else cx
         return [
-            (lane_x, -100.0 * car.vy),
-            (lane_x, 0.0),
-            (lane_x, 100.0 * car.vy),
+            (lane_x, -100.0 * car.vy + cy),
+            (lane_x, cy),
+            (lane_x, 100.0 * car.vy + cy),
         ]
 
 
@@ -274,6 +276,9 @@ class SimBridge:
         car: Car,
         color: Tuple[int, int, int],
     ) -> Dict[str, Any]:
+        node = self._world.network.intersections.get(car.current_int_id)
+        cx = node.cx if node else 0.0
+        cy = node.cy if node else 0.0
         return {
             "id": car.id,
             "x": car.x,
@@ -287,7 +292,10 @@ class SimBridge:
             "role": car.role,
             "priority_score": danger_score(car, self._world.policy),
             "color": color,
-            "road_line": _road_line(car),
+            "road_line": _road_line(car, cx, cy),
+            "current_int_id": car.current_int_id,
+            "int_cx": cx,
+            "int_cy": cy,
         }
 
     # ── tick ──────────────────────────────────────────────────────────────────
@@ -300,7 +308,7 @@ class SimBridge:
             ego_car.ml_payload(
                 self._world.sign_for_car(ego_car),
                 others,
-                traffic_light=self._world.semaphore_color_for_approach(ego_car.approach),
+                traffic_light=self._world.semaphore_color_for_car(ego_car),
             ),
             model_path=self._model_path,
         )
@@ -426,7 +434,30 @@ class SimBridge:
         ]
 
         # 8. Build intersection metadata (UI-compatible + extensible).
-        signs = self._world.get_signs()
+        signs = self._world.get_signs()  # legacy global signs
+        int_list = []
+        for nid, node in self._world.network.intersections.items():
+            int_list.append({
+                "id": nid,
+                "center": [node.cx, node.cy],
+                "box_size": 100,
+                "has_semaphore": node.has_semaphore,
+                "signs": self._world.get_signs_for(nid),
+                "semaphore": self._world.semaphore_state_for(nid),
+            })
+        # Build road segment list for drawing connecting roads
+        road_list = []
+        for seg in self._world.network.roads:
+            n_from = self._world.network.intersections[seg.from_id]
+            n_to = self._world.network.intersections[seg.to_id]
+            road_list.append({
+                "from_id": seg.from_id,
+                "from_arm": seg.from_arm,
+                "to_id": seg.to_id,
+                "to_arm": seg.to_arm,
+                "from_center": [n_from.cx, n_from.cy],
+                "to_center": [n_to.cx, n_to.cy],
+            })
         intersection_meta: Dict[str, Any] = {
             "signs": signs,
             "lane_count": 2,
@@ -436,14 +467,8 @@ class SimBridge:
             "collision_resolutions": self._world.collision_resolutions,
             "bus_metrics": self._bus.metrics.report(),
             "semaphore": self._world.semaphore_state(),
-            "intersections": [
-                {
-                    "id": "INT_000",
-                    "center": [0.0, 0.0],
-                    "box_size": 100,
-                    "signs": signs,
-                }
-            ],
+            "intersections": int_list,
+            "roads": road_list,
         }
 
         # 9. Atomic swap — UI thread reads these via public methods.

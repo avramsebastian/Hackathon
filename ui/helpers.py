@@ -74,8 +74,11 @@ def interpolate_vehicles(
 # ── Awareness / slow-down ────────────────────────────────────────────────────
 
 def is_approaching(vehicle: Dict[str, Any]) -> bool:
-    """True if the vehicle hasn't yet reached the intersection centre."""
-    x, y = vehicle["x"], vehicle["y"]
+    """True if the vehicle hasn't yet reached its current intersection centre."""
+    cx = vehicle.get("int_cx", 0.0)
+    cy = vehicle.get("int_cy", 0.0)
+    x = vehicle["x"] - cx
+    y = vehicle["y"] - cy
     d = vehicle.get("direction", "").upper()
     if d == "EAST":  return x < 0
     if d == "WEST":  return x > 0
@@ -91,7 +94,9 @@ def should_slow_down(vehicle: Dict[str, Any], ml_decision: str) -> bool:
     awareness_distance_m = speed_kmh / 5
     should_slow_down = STOP decision OR (approaching AND within awareness zone)
     """
-    dist = math.hypot(vehicle["x"], vehicle["y"])
+    cx = vehicle.get("int_cx", 0.0)
+    cy = vehicle.get("int_cy", 0.0)
+    dist = math.hypot(vehicle["x"] - cx, vehicle["y"] - cy)
     awareness = vehicle.get("speed", 0) / AWARENESS_DIVISOR
     geo_warning = is_approaching(vehicle) and dist <= awareness
     return ml_decision == "STOP" or geo_warning
