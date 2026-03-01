@@ -147,7 +147,7 @@ def run_pygame_view(
                 scene = "sim"
 
         elif scene == "sim":
-            if not paused:
+            if not paused and not bridge.is_finished():
                 sim_time += dt
 
             # Poll bridge
