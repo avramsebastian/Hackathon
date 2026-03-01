@@ -63,30 +63,35 @@ def run_pygame_view(
     """
     pygame.init()
     pygame.display.set_caption("V2X Intersection Safety Simulator")
-    screen = pygame.display.set_mode((width, height))
+    display_flags = pygame.RESIZABLE
+    screen = pygame.display.set_mode((width, height), display_flags)
+    width, height = screen.get_size()
     clock = pygame.time.Clock()
 
     fonts = _load_fonts()
 
-    # ── Get network info from bridge ──
-    num_intersections, grid_cols, grid_rows = bridge.get_grid_info()
-    bounds_x, bounds_y = bridge.get_network_bounds(width, height)
-    network_width = bounds_x[1] - bounds_x[0]
-    network_height = bounds_y[1] - bounds_y[0]
-    
-    # Compute min_zoom based on intersection count
-    # More intersections = allow more zoom out
-    # 2 intersections: min_zoom ~3.0, 9 intersections: min_zoom ~1.5
-    base_min_zoom = 3.5 - (num_intersections - 2) * 0.3
-    computed_min_zoom = max(1.2, min(3.5, base_min_zoom))
-    
-    # Calculate zoom to fit the network (fill ~75% of screen)
-    zoom_to_fit_x = 0.75 * width / network_width if network_width > 0 else DEFAULT_ZOOM
-    zoom_to_fit_y = 0.75 * height / network_height if network_height > 0 else DEFAULT_ZOOM
-    initial_zoom = min(zoom_to_fit_x, zoom_to_fit_y)
-    
-    # Clamp zoom to computed min
-    initial_zoom = max(computed_min_zoom, min(initial_zoom, MAX_ZOOM))
+    def _compute_view_metrics(
+        screen_w: int,
+        screen_h: int,
+    ) -> Tuple[Tuple[float, float], Tuple[float, float], float, float]:
+        """Compute world bounds and zoom constraints for the current viewport."""
+        num_intersections, _, _ = bridge.get_grid_info()
+        bounds_x, bounds_y = bridge.get_network_bounds(screen_w, screen_h)
+        network_width = bounds_x[1] - bounds_x[0]
+        network_height = bounds_y[1] - bounds_y[0]
+
+        # More intersections => allow more zoom out.
+        base_min_zoom = 3.5 - (num_intersections - 2) * 0.3
+        min_zoom = max(1.2, min(3.5, base_min_zoom))
+
+        # Fit network in roughly 75% of the available viewport.
+        zoom_to_fit_x = 0.75 * screen_w / network_width if network_width > 0 else DEFAULT_ZOOM
+        zoom_to_fit_y = 0.75 * screen_h / network_height if network_height > 0 else DEFAULT_ZOOM
+        fit_zoom = min(zoom_to_fit_x, zoom_to_fit_y)
+        fit_zoom = max(min_zoom, min(fit_zoom, MAX_ZOOM))
+        return bounds_x, bounds_y, min_zoom, fit_zoom
+
+    bounds_x, bounds_y, dynamic_min_zoom, initial_zoom = _compute_view_metrics(width, height)
 
     # ── state ──
     scene: str = "launch"  # "launch" | "sim"
@@ -98,7 +103,21 @@ def run_pygame_view(
     # Store dynamic bounds for clamping
     world_bounds_x = bounds_x
     world_bounds_y = bounds_y
-    dynamic_min_zoom = computed_min_zoom
+
+    def _refresh_network_view(reset_camera: bool) -> None:
+        """Refresh world bounds and zoom constraints after scenario/screen changes."""
+        nonlocal world_bounds_x, world_bounds_y, dynamic_min_zoom
+        bx, by, min_zoom, fit_zoom = _compute_view_metrics(camera.screen_w, camera.screen_h)
+        world_bounds_x = bx
+        world_bounds_y = by
+        dynamic_min_zoom = min_zoom
+        if reset_camera:
+            camera.zoom = fit_zoom
+            camera.world_x = (bx[0] + bx[1]) / 2
+            camera.world_y = (by[0] + by[1]) / 2
+        else:
+            camera.zoom = max(dynamic_min_zoom, min(camera.zoom, MAX_ZOOM))
+            _clamp_camera(camera, world_bounds_x, world_bounds_y)
     
     paused = False
     sim_time = 0.0
@@ -131,7 +150,14 @@ def run_pygame_view(
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         scene = "sim"
                 elif scene == "sim":
-                    _handle_sim_key(event.key, bridge, camera, world_bounds_x, world_bounds_y)
+                    _handle_sim_key(
+                        event.key,
+                        bridge,
+                        camera,
+                        world_bounds_x,
+                        world_bounds_y,
+                        dynamic_min_zoom,
+                    )
                     if event.key == pygame.K_SPACE:
                         paused = not paused
                         bridge.set_paused(paused)
@@ -145,25 +171,18 @@ def run_pygame_view(
                         sim_time = 0.0
                         prev_vehicles = []
                         curr_vehicles = []
-                        # Recompute bounds and zoom for new network
-                        num_intersections, grid_cols, grid_rows = bridge.get_grid_info()
-                        bounds_x, bounds_y = bridge.get_network_bounds(width, height)
-                        network_width = bounds_x[1] - bounds_x[0]
-                        network_height = bounds_y[1] - bounds_y[0]
-                        base_min_zoom = 3.5 - (num_intersections - 2) * 0.3
-                        computed_min_zoom = max(1.2, min(3.5, base_min_zoom))
-                        zoom_to_fit_x = 0.75 * width / network_width if network_width > 0 else DEFAULT_ZOOM
-                        zoom_to_fit_y = 0.75 * height / network_height if network_height > 0 else DEFAULT_ZOOM
-                        initial_zoom = min(zoom_to_fit_x, zoom_to_fit_y)
-                        initial_zoom = max(computed_min_zoom, min(initial_zoom, MAX_ZOOM))
-                        camera.zoom = initial_zoom
-                        camera.world_x = (bounds_x[0] + bounds_x[1]) / 2
-                        camera.world_y = (bounds_y[0] + bounds_y[1]) / 2
-                        world_bounds_x = bounds_x
-                        world_bounds_y = bounds_y
-                        dynamic_min_zoom = computed_min_zoom
+                        _refresh_network_view(reset_camera=True)
                     elif event.key == pygame.K_F12:
                         _screenshot(screen)
+
+            elif event.type == pygame.VIDEORESIZE:
+                # Keep viewport responsive and clamp camera into new bounds.
+                width = max(640, int(event.w))
+                height = max(480, int(event.h))
+                screen = pygame.display.set_mode((width, height), display_flags)
+                camera.screen_w = width
+                camera.screen_h = height
+                _refresh_network_view(reset_camera=False)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if scene == "launch":
@@ -189,7 +208,14 @@ def run_pygame_view(
 
             elif event.type == pygame.MOUSEWHEEL and scene == "sim":
                 # Zoom toward cursor
-                _zoom_toward(camera, mouse_pos, event.y, world_bounds_x, world_bounds_y)
+                _zoom_toward(
+                    camera,
+                    mouse_pos,
+                    event.y,
+                    world_bounds_x,
+                    world_bounds_y,
+                    dynamic_min_zoom,
+                )
 
         # ── Render ────────────────────────────────────────────────────────
         if scene == "launch":
@@ -251,23 +277,7 @@ def run_pygame_view(
                             sim_time = 0.0
                             prev_vehicles = []
                             curr_vehicles = []
-                            # Recompute bounds and zoom for new network
-                            num_intersections, grid_cols, grid_rows = bridge.get_grid_info()
-                            bounds_x, bounds_y = bridge.get_network_bounds(width, height)
-                            network_width = bounds_x[1] - bounds_x[0]
-                            network_height = bounds_y[1] - bounds_y[0]
-                            base_min_zoom = 3.5 - (num_intersections - 2) * 0.3
-                            computed_min_zoom = max(1.2, min(3.5, base_min_zoom))
-                            zoom_to_fit_x = 0.75 * width / network_width if network_width > 0 else DEFAULT_ZOOM
-                            zoom_to_fit_y = 0.75 * height / network_height if network_height > 0 else DEFAULT_ZOOM
-                            initial_zoom = min(zoom_to_fit_x, zoom_to_fit_y)
-                            initial_zoom = max(computed_min_zoom, min(initial_zoom, MAX_ZOOM))
-                            camera.zoom = initial_zoom
-                            camera.world_x = (bounds_x[0] + bounds_x[1]) / 2
-                            camera.world_y = (bounds_y[0] + bounds_y[1]) / 2
-                            world_bounds_x = bounds_x
-                            world_bounds_y = bounds_y
-                            dynamic_min_zoom = computed_min_zoom
+                            _refresh_network_view(reset_camera=True)
 
             # Finished overlay
             if bridge.is_finished():
@@ -362,12 +372,19 @@ def _draw_finished_overlay(
     screen.blit(sub, (w // 2 - sub.get_width() // 2, h // 2 + 30))
 
 
-def _handle_sim_key(key: int, bridge: Any, camera: Camera, bounds_x: tuple[float, float], bounds_y: tuple[float, float]) -> None:
+def _handle_sim_key(
+    key: int,
+    bridge: Any,
+    camera: Camera,
+    bounds_x: tuple[float, float],
+    bounds_y: tuple[float, float],
+    min_zoom: float = MIN_ZOOM,
+) -> None:
     """Handle zoom and pan keys (non-toggle)."""
     if key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
         camera.zoom = min(MAX_ZOOM, camera.zoom + ZOOM_STEP)
     elif key in (pygame.K_MINUS, pygame.K_KP_MINUS):
-        camera.zoom = max(MIN_ZOOM, camera.zoom - ZOOM_STEP)
+        camera.zoom = max(min_zoom, camera.zoom - ZOOM_STEP)
     elif key == pygame.K_UP:
         camera.world_y += 10.0 / camera.zoom
     elif key == pygame.K_DOWN:
@@ -408,13 +425,20 @@ def _clamp_camera(camera: Camera, bounds_x: tuple[float, float], bounds_y: tuple
         camera.world_y = max(min_cam_y, min(max_cam_y, camera.world_y))
 
 
-def _zoom_toward(camera: Camera, mouse_pos: Tuple[int, int], direction: int, bounds_x: tuple[float, float], bounds_y: tuple[float, float]) -> None:
+def _zoom_toward(
+    camera: Camera,
+    mouse_pos: Tuple[int, int],
+    direction: int,
+    bounds_x: tuple[float, float],
+    bounds_y: tuple[float, float],
+    min_zoom: float = MIN_ZOOM,
+) -> None:
     """Zoom in/out centred on mouse cursor."""
     old_zoom = camera.zoom
     if direction > 0:
         camera.zoom = min(MAX_ZOOM, camera.zoom + ZOOM_STEP)
     else:
-        camera.zoom = max(MIN_ZOOM, camera.zoom - ZOOM_STEP)
+        camera.zoom = max(min_zoom, camera.zoom - ZOOM_STEP)
     # Adjust world offset so the point under the cursor stays fixed
     mx, my = mouse_pos
     cx, cy = camera.screen_w / 2, camera.screen_h / 2
