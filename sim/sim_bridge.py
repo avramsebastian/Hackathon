@@ -77,13 +77,44 @@ def _cardinal_direction(car: Car) -> str:
 
 def _road_line(car: Car) -> List[Tuple[float, float]]:
     """
-    Compute a three-point road_line (start → centre → end) from the car's
-    approach side and velocity.  The line is 200 m long, centred on the
-    intersection, offset to the correct lane.
+    Compute a road_line polyline showing the car's planned route through
+    the intersection based on its approach arm and intended manoeuvre
+    (FORWARD / LEFT / RIGHT).
+
+    Right turns follow a tight arc near the intersection corner.
+    Left turns cross through the intersection centre with a wider arc.
     """
-    # The car's current lane offset (perpendicular to travel axis)
+    L = 7.0  # Must stay in sync with SafetyPolicy.lane_offset_m
+    R = 3.0  # Curve smoothing offset for turn waypoints
+
+    approach = getattr(car, "approach", "")
+    ml_dir  = getattr(car, "ml_direction", "FORWARD")
+
+    _lines: Dict[Tuple[str, str], List[Tuple[float, float]]] = {
+        # ── W approach (eastbound at y = -L) ──────────────────────────
+        ("W", "FORWARD"): [(-100, -L), (0, -L), (100, -L)],
+        ("W", "RIGHT"):   [(-100, -L), (-L - R, -L), (-L, -L - R), (-L, -100)],
+        ("W", "LEFT"):    [(-100, -L), (-R, -L), (R, -R), (L, R), (L, 100)],
+        # ── E approach (westbound at y = +L) ──────────────────────────
+        ("E", "FORWARD"): [(100, L), (0, L), (-100, L)],
+        ("E", "RIGHT"):   [(100, L), (L + R, L), (L, L + R), (L, 100)],
+        ("E", "LEFT"):    [(100, L), (R, L), (-R, R), (-L, -R), (-L, -100)],
+        # ── N approach (southbound at x = -L) ────────────────────────
+        ("N", "FORWARD"): [(-L, 100), (-L, 0), (-L, -100)],
+        ("N", "RIGHT"):   [(-L, 100), (-L, L + R), (-L - R, L), (-100, L)],
+        ("N", "LEFT"):    [(-L, 100), (-L, R), (-R, -R), (R, -L), (100, -L)],
+        # ── S approach (northbound at x = +L) ────────────────────────
+        ("S", "FORWARD"): [(L, -100), (L, 0), (L, 100)],
+        ("S", "RIGHT"):   [(L, -100), (L, -L - R), (L + R, -L), (100, -L)],
+        ("S", "LEFT"):    [(L, -100), (L, -R), (R, R), (-R, L), (-100, L)],
+    }
+
+    line = _lines.get((approach, ml_dir))
+    if line:
+        return line
+
+    # Fallback: straight line using velocity (legacy / unknown approach)
     if car.vx != 0:
-        # Horizontal travel → lane offset is in Y
         lane_y = car.y if abs(car.y) > 0.1 else 0.0
         return [
             (-100.0 * car.vx, lane_y),
@@ -91,7 +122,6 @@ def _road_line(car: Car) -> List[Tuple[float, float]]:
             (100.0 * car.vx, lane_y),
         ]
     else:
-        # Vertical travel → lane offset is in X
         lane_x = car.x if abs(car.x) > 0.1 else 0.0
         return [
             (lane_x, -100.0 * car.vy),

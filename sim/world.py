@@ -29,6 +29,33 @@ log = logging.getLogger("world")
 _ML_DIRECTIONS: Tuple[str, ...] = ("FORWARD", "LEFT", "RIGHT")
 _APPROACHES: Tuple[str, ...] = ("W", "N", "E", "S")
 
+# ── Turn waypoints: (approach, ml_direction) → list of (x, y) waypoints ──────
+# Cars follow these waypoints through the intersection for smooth turns.
+# The last waypoint sets the exit heading; intermediate points shape the curve.
+_L: float = 7.0   # Must stay in sync with SafetyPolicy.lane_offset_m
+
+_TURN_WAYPOINTS: Dict[Tuple[str, str], List[Tuple[float, float]]] = {
+    # From W approach (eastbound at y = -L)
+    ("W", "RIGHT"): [(-_L, -_L), (-_L, -_L - 15)],
+    ("W", "LEFT"):  [(0.0, -_L + 3), (3.0, 0.0), (_L, 4.0), (_L, 15.0)],
+    # From E approach (westbound at y = +L)
+    ("E", "RIGHT"): [(_L, _L), (_L, _L + 15)],
+    ("E", "LEFT"):  [(0.0, _L - 3), (-3.0, 0.0), (-_L, -4.0), (-_L, -15.0)],
+    # From N approach (southbound at x = -L)
+    ("N", "RIGHT"): [(-_L, _L), (-_L - 15, _L)],
+    ("N", "LEFT"):  [(-_L + 3, 0.0), (0.0, -3.0), (4.0, -_L), (15.0, -_L)],
+    # From S approach (northbound at x = +L)
+    ("S", "RIGHT"): [(_L, -_L), (_L + 15, -_L)],
+    ("S", "LEFT"):  [(_L - 3, 0.0), (0.0, 3.0), (-4.0, _L), (-15.0, _L)],
+}
+
+# How far from centre (along travel axis) the car begins following waypoints.
+# Right turns start earlier (near the intersection corner); lefts start later.
+_TURN_TRIGGER: Dict[str, float] = {
+    "RIGHT": _L + 1.0,   # ~8 m — near the intersection corner
+    "LEFT":  4.0,        # ~4 m — closer to the centre
+}
+
 
 @dataclass
 class Car:
@@ -70,19 +97,73 @@ class Car:
     stopped: bool = field(default=False, repr=False)
     stop_wait_s: float = field(default=0.0, repr=False)
     stop_completed: bool = field(default=False, repr=False)
+    has_turned: bool = field(default=False, repr=False)
+    _turn_waypoints: List[Tuple[float, float]] = field(
+        default_factory=list, repr=False,
+    )
+    """Remaining waypoints the car must pass through during a turn."""
 
     def __post_init__(self) -> None:
         if self.cruise_speed <= 0.0:
             self.cruise_speed = self.speed
 
+    @property
+    def is_turning(self) -> bool:
+        """True while the car is actively following turn waypoints."""
+        return len(self._turn_waypoints) > 0
+
     # ── movement ──────────────────────────────────────────────────────────
     def move(self, dt: float) -> None:
-        """Advance the car along its velocity vector for *dt* seconds."""
+        """Advance the car — follow turn waypoints if active, else straight."""
         if self.stopped:
             return
         speed_mps = self.speed / 3.6
-        self.x += self.vx * speed_mps * dt
-        self.y += self.vy * speed_mps * dt
+        if self._turn_waypoints:
+            self._move_along_waypoints(speed_mps, dt)
+        else:
+            self.x += self.vx * speed_mps * dt
+            self.y += self.vy * speed_mps * dt
+
+    def _move_along_waypoints(self, speed_mps: float, dt: float) -> None:
+        """Steer toward the next turn waypoint, consuming it when reached."""
+        remaining = speed_mps * dt
+        while remaining > 1e-6 and self._turn_waypoints:
+            tx, ty = self._turn_waypoints[0]
+            dx = tx - self.x
+            dy = ty - self.y
+            dist = math.hypot(dx, dy)
+            if dist < 1e-6:
+                self._turn_waypoints.pop(0)
+                continue
+            if remaining >= dist:
+                # Reach this waypoint and continue to the next.
+                self.x = tx
+                self.y = ty
+                remaining -= dist
+                self._turn_waypoints.pop(0)
+            else:
+                # Move toward waypoint but don't reach it yet.
+                frac = remaining / dist
+                self.x += dx * frac
+                self.y += dy * frac
+                remaining = 0.0
+        # Update vx/vy to reflect current heading (for collision guard, UI, etc.)
+        if self._turn_waypoints:
+            tx, ty = self._turn_waypoints[0]
+            dx = tx - self.x
+            dy = ty - self.y
+            d = math.hypot(dx, dy)
+            if d > 1e-6:
+                self.vx = dx / d
+                self.vy = dy / d
+        elif self.has_turned:
+            # Finished all waypoints — snap vx/vy to the nearest cardinal.
+            if abs(self.vx) >= abs(self.vy):
+                self.vx = 1.0 if self.vx > 0 else -1.0
+                self.vy = 0.0
+            else:
+                self.vy = 1.0 if self.vy > 0 else -1.0
+                self.vx = 0.0
 
     # ── helpers ───────────────────────────────────────────────────────────
     def has_passed(self, threshold: float = 10.0) -> bool:
@@ -274,8 +355,25 @@ class World:
 
         for car in self.cars:
             car.move(dt)
-            if not car.passed and car.has_passed(self.policy.pass_threshold_m):
+
+        self._apply_turns()
+
+        for car in self.cars:
+            # Don't mark a car as "passed" while it's still following
+            # turn waypoints — the intermediate velocity isn't cardinal
+            # and the car hasn't reached the exit lane yet.
+            if not car.passed and not car.is_turning and car.has_passed(self.policy.pass_threshold_m):
                 car.passed = True
+            # Clear leftover waypoints once a car has passed through so
+            # it doesn't stay stuck in "turning" state while coasting.
+            if car.passed and car._turn_waypoints:
+                car._turn_waypoints.clear()
+                if abs(car.vx) >= abs(car.vy):
+                    car.vx = 1.0 if car.vx > 0 else -1.0
+                    car.vy = 0.0
+                else:
+                    car.vy = 1.0 if car.vy > 0 else -1.0
+                    car.vx = 0.0
 
         if self.policy.world_overlap_resolver_enabled:
             self.collision_resolutions += self._resolve_overlaps()
@@ -378,6 +476,43 @@ class World:
         if arm == "N":
             return (-L, distance, 0.0, -1.0)   # north -> south
         return (L, -distance, 0.0, 1.0)        # south -> north
+
+    # ── turning ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _distance_to_center(car: Car) -> float:
+        """Signed distance from *car* to the intersection centre along its
+        travel axis.  Positive → approaching, zero/negative → at or past."""
+        if car.vx > 0:  return -car.x
+        if car.vx < 0:  return  car.x
+        if car.vy < 0:  return  car.y
+        if car.vy > 0:  return -car.y
+        return math.hypot(car.x, car.y)
+
+    def _apply_turns(self) -> None:
+        """Assign turn waypoints to cars entering their turn zone.
+
+        Once assigned, the car's ``move()`` follows the waypoints
+        automatically — no position snap is needed.
+        """
+        for car in self.cars:
+            if car.has_turned or car.is_turning or car.ml_direction == "FORWARD":
+                continue
+            wps = _TURN_WAYPOINTS.get((car.approach, car.ml_direction))
+            if wps is None:
+                continue
+            trigger = _TURN_TRIGGER.get(car.ml_direction, 5.0)
+            dist = self._distance_to_center(car)
+            if dist > trigger:
+                continue
+            # Begin the turn: give the car waypoints to follow.
+            car._turn_waypoints = [wp for wp in wps]  # shallow copy
+            car.has_turned = True
+            log.debug(
+                "TURN START: %s approach=%s dir=%s  trigger_dist=%.1f  "
+                "waypoints=%s",
+                car.id, car.approach, car.ml_direction, dist, wps,
+            )
 
     def _spawn_is_clear(self, x: float, y: float) -> bool:
         for car in self.cars:
