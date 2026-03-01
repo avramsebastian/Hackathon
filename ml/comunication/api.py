@@ -18,6 +18,7 @@ class CarModel(BaseModel):
     y: float
     speed: float
     direction: str
+    role: str = "civilian"
 
 class TrafficStateRequest(BaseModel):
     my_car: CarModel

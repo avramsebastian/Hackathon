@@ -2,156 +2,156 @@
          V2X AI MODEL TEST REPORT
 ==================================================
 
-[Test] Validation accuracy: 93.73%
+[Test] Validation accuracy: 92.90%
 
 --- Confidence breakdown (30 scenarios) ---
 
 Scenario 1 (true: STOP):
-  GO  confidence: 7.3%
-  STOP confidence: 92.7%
+  GO  confidence: 17.3%
+  STOP confidence: 82.7%
   Model decision: STOP
 
-Scenario 2 (true: STOP):
-  GO  confidence: 17.7%
-  STOP confidence: 82.3%
-  Model decision: STOP
+Scenario 2 (true: GO):
+  GO  confidence: 97.0%
+  STOP confidence: 3.0%
+  Model decision: GO
 
 Scenario 3 (true: GO):
-  GO  confidence: 77.0%
-  STOP confidence: 23.0%
+  GO  confidence: 90.5%
+  STOP confidence: 9.5%
   Model decision: GO
 
 Scenario 4 (true: STOP):
-  GO  confidence: 35.5%
-  STOP confidence: 64.5%
+  GO  confidence: 23.3%
+  STOP confidence: 76.7%
   Model decision: STOP
 
-Scenario 5 (true: STOP):
-  GO  confidence: 10.0%
-  STOP confidence: 90.0%
-  Model decision: STOP
+Scenario 5 (true: GO):
+  GO  confidence: 98.0%
+  STOP confidence: 2.0%
+  Model decision: GO
 
 Scenario 6 (true: GO):
-  GO  confidence: 79.5%
-  STOP confidence: 20.5%
+  GO  confidence: 68.6%
+  STOP confidence: 31.4%
   Model decision: GO
 
 Scenario 7 (true: GO):
-  GO  confidence: 87.5%
-  STOP confidence: 12.5%
+  GO  confidence: 97.1%
+  STOP confidence: 2.9%
   Model decision: GO
 
 Scenario 8 (true: GO):
-  GO  confidence: 85.4%
-  STOP confidence: 14.6%
+  GO  confidence: 82.0%
+  STOP confidence: 18.0%
   Model decision: GO
 
 Scenario 9 (true: STOP):
-  GO  confidence: 10.2%
-  STOP confidence: 89.8%
+  GO  confidence: 12.8%
+  STOP confidence: 87.2%
   Model decision: STOP
 
 Scenario 10 (true: GO):
-  GO  confidence: 93.4%
-  STOP confidence: 6.6%
+  GO  confidence: 40.4%
+  STOP confidence: 59.6%
+  Model decision: STOP
+
+Scenario 11 (true: STOP):
+  GO  confidence: 23.9%
+  STOP confidence: 76.1%
+  Model decision: STOP
+
+Scenario 12 (true: STOP):
+  GO  confidence: 60.7%
+  STOP confidence: 39.3%
   Model decision: GO
 
-Scenario 11 (true: GO):
-  GO  confidence: 95.0%
-  STOP confidence: 5.0%
+Scenario 13 (true: GO):
+  GO  confidence: 92.5%
+  STOP confidence: 7.5%
   Model decision: GO
 
-Scenario 12 (true: GO):
+Scenario 14 (true: GO):
   GO  confidence: 90.2%
   STOP confidence: 9.8%
   Model decision: GO
 
-Scenario 13 (true: GO):
-  GO  confidence: 82.9%
-  STOP confidence: 17.1%
-  Model decision: GO
-
-Scenario 14 (true: STOP):
-  GO  confidence: 16.8%
-  STOP confidence: 83.2%
-  Model decision: STOP
-
 Scenario 15 (true: GO):
-  GO  confidence: 70.3%
-  STOP confidence: 29.7%
+  GO  confidence: 91.7%
+  STOP confidence: 8.3%
   Model decision: GO
 
 Scenario 16 (true: GO):
-  GO  confidence: 86.9%
-  STOP confidence: 13.1%
+  GO  confidence: 82.0%
+  STOP confidence: 18.0%
   Model decision: GO
 
 Scenario 17 (true: GO):
-  GO  confidence: 91.0%
-  STOP confidence: 9.0%
+  GO  confidence: 93.8%
+  STOP confidence: 6.2%
   Model decision: GO
 
 Scenario 18 (true: GO):
-  GO  confidence: 94.1%
-  STOP confidence: 5.9%
-  Model decision: GO
+  GO  confidence: 28.7%
+  STOP confidence: 71.3%
+  Model decision: STOP
 
-Scenario 19 (true: GO):
-  GO  confidence: 86.7%
-  STOP confidence: 13.3%
-  Model decision: GO
+Scenario 19 (true: STOP):
+  GO  confidence: 14.9%
+  STOP confidence: 85.1%
+  Model decision: STOP
 
 Scenario 20 (true: GO):
-  GO  confidence: 89.9%
-  STOP confidence: 10.1%
+  GO  confidence: 95.3%
+  STOP confidence: 4.7%
   Model decision: GO
 
 Scenario 21 (true: STOP):
-  GO  confidence: 10.4%
-  STOP confidence: 89.6%
+  GO  confidence: 12.9%
+  STOP confidence: 87.1%
   Model decision: STOP
 
 Scenario 22 (true: STOP):
-  GO  confidence: 15.0%
-  STOP confidence: 85.0%
+  GO  confidence: 14.6%
+  STOP confidence: 85.4%
   Model decision: STOP
 
-Scenario 23 (true: GO):
-  GO  confidence: 46.5%
-  STOP confidence: 53.5%
-  Model decision: STOP
-
-Scenario 24 (true: STOP):
-  GO  confidence: 36.8%
-  STOP confidence: 63.2%
-  Model decision: STOP
-
-Scenario 25 (true: GO):
-  GO  confidence: 85.2%
-  STOP confidence: 14.8%
+Scenario 23 (true: STOP):
+  GO  confidence: 67.4%
+  STOP confidence: 32.6%
   Model decision: GO
 
+Scenario 24 (true: GO):
+  GO  confidence: 99.7%
+  STOP confidence: 0.3%
+  Model decision: GO
+
+Scenario 25 (true: GO):
+  GO  confidence: 41.5%
+  STOP confidence: 58.5%
+  Model decision: STOP
+
 Scenario 26 (true: GO):
-  GO  confidence: 94.4%
-  STOP confidence: 5.6%
+  GO  confidence: 80.4%
+  STOP confidence: 19.6%
   Model decision: GO
 
 Scenario 27 (true: GO):
-  GO  confidence: 65.8%
-  STOP confidence: 34.2%
+  GO  confidence: 87.1%
+  STOP confidence: 12.9%
   Model decision: GO
 
-Scenario 28 (true: STOP):
-  GO  confidence: 12.2%
-  STOP confidence: 87.8%
-  Model decision: STOP
+Scenario 28 (true: GO):
+  GO  confidence: 83.1%
+  STOP confidence: 16.9%
+  Model decision: GO
 
 Scenario 29 (true: GO):
-  GO  confidence: 79.0%
-  STOP confidence: 21.0%
-  Model decision: GO
+  GO  confidence: 31.8%
+  STOP confidence: 68.2%
+  Model decision: STOP
 
 Scenario 30 (true: GO):
-  GO  confidence: 94.3%
-  STOP confidence: 5.7%
+  GO  confidence: 63.5%
+  STOP confidence: 36.5%
   Model decision: GO
