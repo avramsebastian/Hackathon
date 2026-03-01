@@ -34,7 +34,7 @@ from ui.types import Camera
 from ui.helpers import draw_alpha_rect, draw_alpha_circle
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-_TERMINAL_ARM_LEN = 80.0  # how far terminal road arms extend from centre (m)
+_DEFAULT_TERMINAL_ARM_LEN = 80.0  # default for terminal road arms (m)
 _APPROACHES = ("N", "S", "E", "W")
 
 
@@ -42,16 +42,66 @@ _APPROACHES = ("N", "S", "E", "W")
 #  INTERNAL: compute arm lengths from network data
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _compute_terminal_lengths(
+    intersections: List[Dict[str, Any]],
+) -> Dict[str, float]:
+    """Compute terminal arm lengths per direction based on network extent.
+    
+    For narrow networks, extend arms in that direction to fill space.
+    """
+    if not intersections:
+        return {a: _DEFAULT_TERMINAL_ARM_LEN for a in _APPROACHES}
+    
+    xs = [i["center"][0] for i in intersections]
+    ys = [i["center"][1] for i in intersections]
+    
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    
+    net_width = max_x - min_x if max_x > min_x else 0.0
+    net_height = max_y - min_y if max_y > min_y else 0.0
+    
+    # Target aspect ratio ~16:9
+    target_aspect = 16.0 / 9.0
+    
+    # Compute how much to extend in each direction
+    if net_height > 0:
+        target_width = net_height * target_aspect
+        if net_width < target_width:
+            extra_x = (target_width - net_width) / 2.0
+        else:
+            extra_x = 0.0
+    else:
+        extra_x = 150.0  # single row - extend horizontally
+    
+    if net_width > 0:
+        target_height = net_width / target_aspect
+        if net_height < target_height:
+            extra_y = (target_height - net_height) / 2.0
+        else:
+            extra_y = 0.0
+    else:
+        extra_y = 150.0  # single column - extend vertically
+    
+    return {
+        "N": _DEFAULT_TERMINAL_ARM_LEN + extra_y,
+        "S": _DEFAULT_TERMINAL_ARM_LEN + extra_y,
+        "E": _DEFAULT_TERMINAL_ARM_LEN + extra_x,
+        "W": _DEFAULT_TERMINAL_ARM_LEN + extra_x,
+    }
+
+
 def _arm_lengths(
     intersections: List[Dict[str, Any]],
     roads_data: List[Dict[str, Any]],
 ) -> Dict[str, Dict[str, float]]:
     """Per-intersection arm lengths.  Connected arms extend half the
-    distance to the neighbour; terminal arms extend *_TERMINAL_ARM_LEN*."""
+    distance to the neighbour; terminal arms extend dynamically."""
     centers = {i["id"]: i["center"] for i in intersections}
+    terminal_lens = _compute_terminal_lengths(intersections)
     result: Dict[str, Dict[str, float]] = {}
     for i in intersections:
-        result[i["id"]] = {a: _TERMINAL_ARM_LEN for a in _APPROACHES}
+        result[i["id"]] = {a: terminal_lens[a] for a in _APPROACHES}
     for road in roads_data:
         c1 = centers[road["from_id"]]
         c2 = centers[road["to_id"]]

@@ -65,8 +65,8 @@ COLOR_LAUNCH_BTN      = (86, 168, 255)
 COLOR_LAUNCH_BTN_H    = (120, 190, 255)
 
 # ── Camera defaults ───────────────────────────────────────────────────────────
-DEFAULT_ZOOM  = 1.8               # zoomed out to fit multi-intersection network
-MIN_ZOOM      = 0.8
+DEFAULT_ZOOM  = 4.0               # zoomed in to hide road ends
+MIN_ZOOM      = 1.5               # allow zoom out for large networks
 MAX_ZOOM      = 10.0
 ZOOM_STEP     = 0.3
 

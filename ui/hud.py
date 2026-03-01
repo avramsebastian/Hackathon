@@ -201,7 +201,7 @@ def draw_control_bar(
     pygame.draw.line(screen, COLOR_HUD_BORDER, (0, bar_rect.y), (sw, bar_rect.y))
 
     buttons: List[ButtonRect] = []
-    labels = [("▶  Start", "start"), ("⏸  Pause", "pause"), ("↺  Reset", "reset")]
+    labels = [("▶  Start", "start"), ("⏸  Pause", "pause"), ("↺  Reset", "reset"), ("🔄  New", "new")]
     total_w = len(labels) * (BTN_W + 10) - 10
     bx = sw // 2 - total_w // 2
     by = bar_rect.y + (CONTROL_BAR_H - BTN_H) // 2

@@ -239,6 +239,18 @@ class SimBridge:
         with self._lock:
             return dict(self._intersection)
 
+    def get_network_bounds(
+        self,
+        screen_width: float = 1280.0,
+        screen_height: float = 720.0,
+    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        """Return ((min_x, max_x), (min_y, max_y)) world bounds of the network."""
+        return self._world.network.get_bounds(screen_width, screen_height)
+    
+    def get_grid_info(self) -> Tuple[int, int, int]:
+        """Return (num_intersections, grid_cols, grid_rows)."""
+        return self._world.network.get_grid_info()
+
     def is_finished(self) -> bool:
         """True when all cars have stopped after passing through."""
         return self._world.is_finished()
@@ -251,6 +263,21 @@ class SimBridge:
             self._decisions = {}
             self._color_by_id = {}
         log.info("SimBridge reset")
+    
+    def new_scenario(self) -> None:
+        """Create a completely new scenario with a different random network."""
+        import random
+        new_seed = random.randint(0, 999999)
+        self._world = World(
+            num_cars=len(self._world.all_cars()) or 6,
+            seed=new_seed,
+            policy=self._world.policy,
+        )
+        with self._lock:
+            self._vehicles = []
+            self._decisions = {}
+            self._color_by_id = {}
+        log.info(f"SimBridge new_scenario seed={new_seed}")
 
     def set_paused(self, paused: bool) -> None:
         """Pause / unpause the simulation tick."""
