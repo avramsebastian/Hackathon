@@ -647,8 +647,15 @@ class World:
                         target = max(target, car.cruise_speed)
 
             # ── Intersection box speed cap ───────────────────────────────
+            # Lift the cap when the light is yellow/red and the car is
+            # already committed inside the box — let it clear quickly.
             if self._car_in_intersection(car) and not car.passed:
-                target = min(target, self.policy.intersection_speed_cap_kmh)
+                sem_color = self.semaphore_color_for_approach(car.approach)
+                committed = self._distance_to_stop_line(car) < -2.0
+                if committed and sem_color != _PHASE_GREEN:
+                    target = max(target, car.cruise_speed)
+                else:
+                    target = min(target, self.policy.intersection_speed_cap_kmh)
 
             targets[car.id] = target
         return targets
