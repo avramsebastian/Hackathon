@@ -44,6 +44,16 @@ def fa_inferenta_din_json(data_json: dict, model_path: str = "traffic_model.pkl"
         role=parse_role(mc.get("role", "civilian"))
     )
 
+    # Emergency vehicles bypass ML right-of-way classification.
+    if my_car.role == Role.EMERGENCY:
+        return {
+            "status": "success",
+            "decision": "GO",
+            "confidence_go": 1.0,
+            "confidence_stop": 0.0,
+            "emergency_override": True,
+        }
+
     traffic = [
         Car(x=float(t.get("x", 0.0)), y=float(t.get("y", 0.0)), speed=float(t.get("speed", 0.0)), 
             direction=parse_direction(t.get("direction", "FORWARD")), role=parse_role(t.get("role", "civilian"))) 

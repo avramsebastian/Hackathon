@@ -34,7 +34,7 @@ from ui.types import Camera
 from ui.helpers import draw_alpha_rect, draw_alpha_circle
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-_DEFAULT_TERMINAL_ARM_LEN = 80.0  # default for terminal road arms (m)
+_DEFAULT_TERMINAL_ARM_LEN = 300.0  # default for terminal road arms (m)
 _APPROACHES = ("N", "S", "E", "W")
 
 

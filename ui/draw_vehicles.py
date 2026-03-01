@@ -49,7 +49,7 @@ def draw_all_vehicles(
 
     # 3. Car body + headlights (on top)
     for v in vehicles:
-        _draw_vehicle(screen, camera, v)
+        _draw_vehicle(screen, camera, v, frame)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -108,7 +108,7 @@ def _draw_awareness_ring(
 # ── Vehicle body ──────────────────────────────────────────────────────────────
 
 def _draw_vehicle(
-    screen: pygame.Surface, cam: Camera, vehicle: Dict[str, Any]
+    screen: pygame.Surface, cam: Camera, vehicle: Dict[str, Any], frame: int = 0
 ) -> None:
     """
     Draw a top-down car polygon rotated by heading, with headlights.
@@ -169,6 +169,10 @@ def _draw_vehicle(
     rect = rotated.get_rect(center=(int(sx), int(sy)))
     screen.blit(rotated, rect)
 
+    # --- Blue gyrophars for priority vehicles ---
+    if vehicle.get("priority", False):
+        _draw_gyrophars(screen, int(sx), int(sy), cl, cw, heading, frame)
+
     # --- ID label above car ---
     if cam.zoom >= 2.0:
         font = pygame.font.SysFont("arial,helvetica", max(9, int(cam.zoom * 3.5)))
@@ -200,10 +204,48 @@ def _car_polygon(cx: int, cy: int, length: float, width: float) -> List[Tuple[in
 # ── Colour helpers ────────────────────────────────────────────────────────────
 
 def _get_color(vehicle: Dict[str, Any]) -> Tuple[int, int, int]:
+    # Priority vehicles are white
+    if vehicle.get("priority", False):
+        return (255, 255, 255)
     c = vehicle.get("color", (180, 180, 180))
     if isinstance(c, (list, tuple)) and len(c) >= 3:
         return (c[0], c[1], c[2])
     return (180, 180, 180)
+
+
+def _draw_gyrophars(
+    screen: pygame.Surface,
+    sx: int, sy: int,
+    car_length: float, car_width: float,
+    heading: float, frame: int
+) -> None:
+    """Draw flashing blue gyrophars on roof of priority vehicle."""
+    # Two lights on the roof, offset left/right from center
+    offset = car_width * 0.25
+    rad = math.radians(heading)
+    # Perpendicular direction for left/right offset
+    perp_x = -math.sin(rad) * offset
+    perp_y = math.cos(rad) * offset
+    
+    # Alternating flash pattern
+    flash = (frame // 4) % 2  # switches every 4 frames
+    light_r = max(2, int(car_width * 0.2))
+    
+    # Left light
+    lx, ly = int(sx + perp_x), int(sy + perp_y)
+    # Right light  
+    rx, ry = int(sx - perp_x), int(sy - perp_y)
+    
+    # Flash blue alternately
+    blue_bright = (0, 100, 255)
+    blue_dim = (0, 50, 150)
+    
+    if flash == 0:
+        pygame.draw.circle(screen, blue_bright, (lx, ly), light_r)
+        pygame.draw.circle(screen, blue_dim, (rx, ry), light_r)
+    else:
+        pygame.draw.circle(screen, blue_dim, (lx, ly), light_r)
+        pygame.draw.circle(screen, blue_bright, (rx, ry), light_r)
 
 
 def _darken(color: Tuple[int, int, int], amount: int = 40) -> Tuple[int, int, int]:

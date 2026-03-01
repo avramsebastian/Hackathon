@@ -29,6 +29,7 @@ log = logging.getLogger("world")
 
 _ML_DIRECTIONS: Tuple[str, ...] = ("FORWARD", "LEFT", "RIGHT")
 _APPROACHES: Tuple[str, ...] = ("W", "N", "E", "S")
+_EMERGENCY_ROLES: Tuple[str, ...] = ("ambulance", "police", "fire")
 
 # Semaphore phase names
 _PHASE_GREEN  = "GREEN"
@@ -137,6 +138,7 @@ class Car:
     ml_direction: str       # FORWARD | LEFT | RIGHT  (for ML model)
     approach: str           # W | N | E | S            (which side car enters from)
     role: str = "civilian"
+    priority: bool = False     # priority vehicle flag (max 1 per intersection)
     cruise_speed: float = 0.0
     speed_limit_kmh: float = 42.0
     wait_s: float = 0.0
@@ -362,10 +364,18 @@ class World:
 
     # ── initialisation / reset ────────────────────────────────────────────
 
+    # Global scenario counter used to keep priority cadence stable across
+    # world resets and newly created World instances.
+    _scenario_counter: int = 0
+
     def _init_cars(self) -> None:
+        World._scenario_counter += 1
+        self._scenario_index = World._scenario_counter
+
         self.cars = []
         for idx in range(self.num_cars):
             self.cars.append(self._make_random_car(idx))
+        self._assign_priority_vehicles(self._priority_target_count())
         self.safety_interventions = 0
         self.collision_resolutions = 0
         self.green_approach = "W"
@@ -445,17 +455,19 @@ class World:
                 dec = decisions.get(car.id, {})
                 ml_dec = dec.get("decision", "?")
                 node = self.network.intersections.get(car.current_int_id)
+                sem_color = self.semaphore_color_for_car(car)
                 cx = node.cx if node else 0.0
                 cy = node.cy if node else 0.0
                 rx, ry = car.x - cx, car.y - cy
                 log.debug(
                     "  %s  pos=(%.1f,%.1f) v=(%.1f,%.1f) int=%s ctr=(%.0f,%.0f) rel=(%.1f,%.1f) "
-                    "app=%s ml_dir=%s spd=%.1f cruise=%.1f "
+                    "app=%s ml_dir=%s role=%s prio=%s sem=%s spd=%.1f cruise=%.1f "
                     "sign=%s dist_line=%.1f passed=%s turning=%s has_turned=%s "
                     "stopped=%s stop_wait=%.2f stop_done=%s ml=%s target=%.1f",
                     car.id, car.x, car.y, car.vx, car.vy,
                     car.current_int_id, cx, cy, rx, ry,
-                    car.approach, car.ml_direction, car.speed, car.cruise_speed,
+                    car.approach, car.ml_direction, car.role, car.priority,
+                    sem_color, car.speed, car.cruise_speed,
                     sign, dist, car.passed, car.is_turning, car.has_turned,
                     car.stopped, car.stop_wait_s, car.stop_completed, ml_dec,
                     targets.get(car.id, -1),
@@ -492,9 +504,9 @@ class World:
                 if next_int is not None:
                     # Transition: reset per-intersection state for the new target
                     old_int = car.current_int_id
-                    car.current_int_id = next_int.id
                     # Determine the arrival arm from the road connection
                     new_approach = self._arrival_arm(car, next_int)
+                    car.current_int_id = next_int.id
                     if new_approach:
                         car.approach = new_approach
                     car.has_turned = False
@@ -518,6 +530,8 @@ class World:
                 else:
                     car.vy = 1.0 if car.vy > 0 else -1.0
                     car.vx = 0.0
+
+        self._enforce_unique_priority_per_intersection()
 
         if self.policy.world_overlap_resolver_enabled:
             self.collision_resolutions += self._resolve_overlaps()
@@ -547,6 +561,98 @@ class World:
         }
 
     # ── spawning ──────────────────────────────────────────────────────────
+
+    def _has_priority_car_in_intersection(self, int_id: str) -> bool:
+        """Check if there's already a priority car in the given intersection."""
+        for car in self.cars:
+            if car.current_int_id == int_id and car.priority:
+                return True
+        return False
+
+    def _priority_target_count(self) -> int:
+        """Return how many priority vehicles this scenario should have.
+
+        Cadence:
+        - odd scenario index  -> 0 priority cars
+        - even scenario index -> at least 1 priority car
+        - every 4th scenario  -> try 2 priority cars
+        - every 8th scenario  -> try 3 priority cars
+        """
+        intersections = {car.current_int_id for car in self.cars}
+        max_unique = len(intersections)
+        if max_unique == 0:
+            return 0
+        if self._scenario_index % 2 == 1:
+            return 0
+
+        target = 1
+        if self._scenario_index % 4 == 0:
+            target = 2
+        if self._scenario_index % 8 == 0:
+            target = 3
+        return min(target, max_unique)
+
+    def _assign_priority_vehicles(self, target_count: int) -> None:
+        """Assign exactly *target_count* priority vehicles.
+
+        Never places more than one priority vehicle in the same intersection.
+        """
+        for car in self.cars:
+            car.priority = False
+
+        if target_count <= 0 or not self.cars:
+            self._sync_priority_and_role()
+            return
+
+        cars_by_int: Dict[str, List[Car]] = {}
+        for car in self.cars:
+            cars_by_int.setdefault(car.current_int_id, []).append(car)
+
+        int_ids = list(cars_by_int.keys())
+        self._rng.shuffle(int_ids)
+        chosen_ints = int_ids[:target_count]
+
+        for int_id in chosen_ints:
+            group = cars_by_int.get(int_id, [])
+            if not group:
+                continue
+            chosen = self._rng.choice(group)
+            chosen.priority = True
+
+        self._sync_priority_and_role()
+
+    def _enforce_unique_priority_per_intersection(self) -> None:
+        """Keep at most one *active* priority car per intersection at runtime.
+
+        Cars that already passed their stop line for the current intersection
+        no longer compete for that intersection's priority slot.
+        """
+        grouped: Dict[str, List[Car]] = {}
+        for car in self.cars:
+            if car.priority and not car.passed:
+                grouped.setdefault(car.current_int_id, []).append(car)
+
+        for group in grouped.values():
+            if len(group) <= 1:
+                continue
+            keeper = max(group, key=lambda c: (danger_score(c, self.policy), c.id))
+            for car in group:
+                car.priority = (car is keeper)
+        self._sync_priority_and_role()
+
+    @staticmethod
+    def _is_emergency_role(role: str) -> bool:
+        return str(role).lower() in _EMERGENCY_ROLES
+
+    def _sync_priority_and_role(self) -> None:
+        """Make emergency role and priority flag represent the same state."""
+        for car in self.cars:
+            if car.priority:
+                if not self._is_emergency_role(car.role):
+                    car.role = self._rng.choice(_EMERGENCY_ROLES)
+            else:
+                if self._is_emergency_role(car.role):
+                    car.role = "civilian"
 
     def _make_random_car(self, idx: int) -> Car:
         """
@@ -596,6 +702,7 @@ class World:
             ml_direction=ml_direction,
             approach=arm,
             role=role,
+            priority=False,
             cruise_speed=speed,
             speed_limit_kmh=self.policy.speed_limit_kmh,
             vx=vx,
@@ -701,7 +808,9 @@ class World:
         conn = self.network.connected_arm(car.current_int_id, exit_arm)
         if conn is None:
             return None
-        _next_id, entry_arm = conn
+        next_id, entry_arm = conn
+        if next_id != target_node.id:
+            return None
         return entry_arm
 
     def _car_in_intersection(self, car: Car) -> bool:
@@ -756,62 +865,72 @@ class World:
 
             # ── Semaphore enforcement (overrides signs when enabled) ─────
             if car_has_sem and not car.passed:
-                sem_color = self.semaphore_color_for_car(car)
-                if sem_color in (_PHASE_RED, _PHASE_YELLOW):
-                    dist_to_line = self._distance_to_stop_line(car)
-                    if dist_to_line > self.policy.semaphore_brake_zone_m:
-                        # Far away — cruise normally
-                        target = max(target, car.cruise_speed)
-                    elif dist_to_line > 0.0:
-                        ratio = dist_to_line / self.policy.semaphore_brake_zone_m
-                        approach_target = ratio * car.cruise_speed
-                        target = min(target, approach_target)
-                    elif dist_to_line > -2.0:
-                        # Just reached the stop line — hold here
-                        target = 0.0
-                    else:
-                        # Already well past the line (committed) — let it through
-                        target = max(target, car.cruise_speed)
-                elif sem_color == _PHASE_GREEN:
-                    # Green → drive through, override any lingering ML STOP
+                if self._is_emergency(car):
+                    # Emergency/priority vehicles ignore semaphore red/yellow.
                     target = max(target, car.cruise_speed)
-                    # Also mark stop_completed so sign logic doesn't re-apply
                     car.stop_completed = True
+                else:
+                    sem_color = self.semaphore_color_for_car(car)
+                    if sem_color in (_PHASE_RED, _PHASE_YELLOW):
+                        dist_to_line = self._distance_to_stop_line(car)
+                        if dist_to_line > self.policy.semaphore_brake_zone_m:
+                            # Far away — cruise normally
+                            target = max(target, car.cruise_speed)
+                        elif dist_to_line > 0.0:
+                            ratio = dist_to_line / self.policy.semaphore_brake_zone_m
+                            approach_target = ratio * car.cruise_speed
+                            target = min(target, approach_target)
+                        elif dist_to_line > -2.0:
+                            # Just reached the stop line — hold here
+                            target = 0.0
+                        else:
+                            # Already well past the line (committed) — let it through
+                            target = max(target, car.cruise_speed)
+                    elif sem_color == _PHASE_GREEN:
+                        # Green → drive through, override any lingering ML STOP
+                        target = max(target, car.cruise_speed)
+                        # Also mark stop_completed so sign logic doesn't re-apply
+                        car.stop_completed = True
 
             # ── Stop / Yield enforcement (signs – only when no semaphore) ─
             elif not car_has_sem:
-                sign = self.sign_for_car(car)
-                required_wait = 0.0
-                if sign == "STOP":
-                    required_wait = self.policy.stop_sign_wait_s     # 0.2 s
-                elif sign == "YIELD":
-                    required_wait = self.policy.stop_sign_wait_s * 0.5  # 0.1 s
+                if self._is_emergency(car):
+                    # Emergency/priority vehicles ignore STOP/YIELD controls.
+                    target = max(target, car.cruise_speed)
+                    car.stop_completed = True
+                else:
+                    sign = self.sign_for_car(car)
+                    required_wait = 0.0
+                    if sign == "STOP":
+                        required_wait = self.policy.stop_sign_wait_s     # 0.2 s
+                    elif sign == "YIELD":
+                        required_wait = self.policy.stop_sign_wait_s * 0.5  # 0.1 s
 
-                if required_wait > 0.0 and not car.passed:
-                    if not car.stop_completed:
-                        dist_to_line = self._distance_to_stop_line(car)
+                    if required_wait > 0.0 and not car.passed:
+                        if not car.stop_completed:
+                            dist_to_line = self._distance_to_stop_line(car)
 
-                        if dist_to_line > self.policy.stop_brake_zone_m:
-                            target = max(target, car.cruise_speed)
+                            if dist_to_line > self.policy.stop_brake_zone_m:
+                                target = max(target, car.cruise_speed)
 
-                        elif dist_to_line > 0.0:
-                            ratio = dist_to_line / self.policy.stop_brake_zone_m
-                            approach_target = ratio * car.cruise_speed
-                            target = min(target, approach_target)
+                            elif dist_to_line > 0.0:
+                                ratio = dist_to_line / self.policy.stop_brake_zone_m
+                                approach_target = ratio * car.cruise_speed
+                                target = min(target, approach_target)
 
-                            if car.speed < 1.0:
-                                car.stop_wait_s += dt
-                            if car.stop_wait_s >= required_wait:
-                                car.stop_completed = True
+                                if car.speed < 1.0:
+                                    car.stop_wait_s += dt
+                                if car.stop_wait_s >= required_wait:
+                                    car.stop_completed = True
 
+                            else:
+                                target = 0.0
+                                if car.speed < 1.0:
+                                    car.stop_wait_s += dt
+                                if car.stop_wait_s >= required_wait:
+                                    car.stop_completed = True
                         else:
-                            target = 0.0
-                            if car.speed < 1.0:
-                                car.stop_wait_s += dt
-                            if car.stop_wait_s >= required_wait:
-                                car.stop_completed = True
-                    else:
-                        target = max(target, car.cruise_speed)
+                            target = max(target, car.cruise_speed)
 
             # ── Intersection box speed cap ───────────────────────────────
             # Lift the cap ONLY during yellow so committed cars clear
@@ -836,6 +955,10 @@ class World:
         - ``decision == STOP`` maps to ``policy.ml_stop_target_speed_kmh``.
         - otherwise defaults to cruise speed.
         """
+        if self._is_emergency(car):
+            # Priority/emergency vehicles don't obey ML STOP commands.
+            return car.cruise_speed
+
         raw_target = decision_payload.get("target_speed_kmh")
         if raw_target is not None:
             try:
@@ -1136,6 +1259,12 @@ class World:
         # ── Traffic-sign priority (dominant rule) ─────────────────────
         # PRIORITY > NO_SIGN > YIELD > STOP.
         # The car with the weaker sign must always yield.
+        # Emergency vehicles bypass sign-based right-of-way.
+        if self._is_emergency(a) and not self._is_emergency(b):
+            return b
+        if self._is_emergency(b) and not self._is_emergency(a):
+            return a
+
         _SIGN_RANK = {"PRIORITY": 3, "NO_SIGN": 2, "YIELD": 1, "STOP": 0}
         sa = _SIGN_RANK.get(self.sign_for_car(a), 2)
         sb = _SIGN_RANK.get(self.sign_for_car(b), 2)
@@ -1275,7 +1404,9 @@ class World:
         return car.approach != self.green_approach
 
     def _is_emergency(self, car: Car) -> bool:
-        return car.role in ("ambulance", "police", "fire")
+        # Treat both representations as emergency to avoid one-tick
+        # desyncs between role and priority flag.
+        return bool(car.priority) or self._is_emergency_role(car.role)
 
     def _update_virtual_signal(self, dt: float) -> None:
         self._green_ttl_s = max(0.0, self._green_ttl_s - dt)

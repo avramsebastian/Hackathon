@@ -317,6 +317,7 @@ class SimBridge:
             "vy": car.vy,
             "approach": car.approach,
             "role": car.role,
+            "priority": car.priority,
             "priority_score": danger_score(car, self._world.policy),
             "color": color,
             "road_line": _road_line(car, cx, cy),
