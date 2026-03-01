@@ -339,10 +339,20 @@ class World:
         self._tick_count: int = 0
 
         # ── Semaphore state (per intersection) ──────────────────────────
+        # Stagger timers so each semaphore intersection runs independently.
+        sem_offset = 0.0
         for node in self.network.intersections.values():
-            node.sem_green_axis = node.priority_axis
-            node.sem_phase = _PHASE_GREEN
-            node.sem_timer = self.policy.semaphore_green_s
+            if node.has_semaphore:
+                node.sem_green_axis = node.priority_axis
+                node.sem_phase = _PHASE_GREEN
+                # Stagger by half-cycle so intersections are out of phase
+                node.sem_timer = self.policy.semaphore_green_s + sem_offset
+                sem_offset += self.policy.semaphore_green_s / 2.0
+            else:
+                # Sign-only intersection: no semaphore state
+                node.sem_green_axis = ""
+                node.sem_phase = ""
+                node.sem_timer = 0.0
         # Legacy single-intersection fields (kept for compatibility)
         self._sem_green_axis: str = "EW"
         self._sem_phase: str = _PHASE_GREEN
@@ -360,10 +370,18 @@ class World:
         self.collision_resolutions = 0
         self.green_approach = "W"
         self._green_ttl_s = 0.0
+        # Reset semaphore state (staggered timers)
+        sem_offset = 0.0
         for node in self.network.intersections.values():
-            node.sem_green_axis = node.priority_axis
-            node.sem_phase = _PHASE_GREEN
-            node.sem_timer = self.policy.semaphore_green_s
+            if node.has_semaphore:
+                node.sem_green_axis = node.priority_axis
+                node.sem_phase = _PHASE_GREEN
+                node.sem_timer = self.policy.semaphore_green_s + sem_offset
+                sem_offset += self.policy.semaphore_green_s / 2.0
+            else:
+                node.sem_green_axis = ""
+                node.sem_phase = ""
+                node.sem_timer = 0.0
         self._sem_green_axis = "EW"
         self._sem_phase = _PHASE_GREEN
         self._sem_timer = self.policy.semaphore_green_s
@@ -1015,6 +1033,22 @@ class World:
         if now <= safe_dist:
             return True
 
+        # ── Skip cross-intersection projection for distant cars ──────
+        # Cars at different intersections can't conflict unless they
+        # are on a connecting road segment (same direction, close).
+        # Skip expensive projection for cars at different intersections
+        # that are far apart. This prevents false conflicts between
+        # cars at INT_A and INT_B for example.
+        same_int = (a.current_int_id == b.current_int_id)
+        same_direction = (a.vx == b.vx and a.vy == b.vy)
+        if not same_int and not same_direction:
+            # Different intersections, different directions → no conflict
+            # unless they're already very close (covered by check above).
+            return False
+        if not same_int and same_direction and now > 50.0:
+            # Same direction (possibly connecting road) but far apart.
+            return False
+
         # ── Time-swept projection ────────────────────────────────────
         # Check multiple time steps so perpendicular approaches that
         # converge on the intersection centre don't slip through a
@@ -1043,14 +1077,15 @@ class World:
                     return True
 
         # ── Intersection-zone conflict for perpendicular approaches ──
-        # If both cars are heading into the intersection from different
+        # If both cars are heading into the SAME intersection from different
         # directions and both will reach the stop line within the
         # horizon, they *will* conflict at the centre even if the
         # swept check above missed it (e.g. they arrive at slightly
         # different times and the step granularity skipped the overlap).
         # SKIP this check when the semaphore is active — the traffic
         # light already separates the conflicting phases.
-        if not (a.passed or b.passed) and not both_sem:
+        # Also SKIP if cars are at different intersections.
+        if same_int and not (a.passed or b.passed) and not both_sem:
             da = self._distance_to_stop_line(a)
             db = self._distance_to_stop_line(b)
             perpendicular = (a.vx != 0) != (b.vx != 0)  # one horizontal, one vertical
